@@ -671,6 +671,18 @@
             src="https://maps.google.com/maps?q=33.48870462324147,36.35352933237707&z=16&output=embed">
         </iframe>
     </div>
+    
+    <!-- Direct Navigation Button for Desktop & Mobile -->
+    <div style="text-align: center; margin-top: 15px;">
+        <a id="navBtn" 
+           href="https://www.google.com/maps/dir/?api=1&destination=33.48870462324147,36.35352933237707" 
+           target="_blank" 
+           rel="noopener noreferrer" 
+           class="action-btn" 
+           style="display: inline-flex; text-decoration: none; padding: 10px 24px; font-size: 1rem;">
+           📍 Open in Google Maps / Get Directions
+        </a>
+    </div>
 </div>
 
     <!-- Booking Modal -->
@@ -729,7 +741,7 @@
                 <input type="password" id="staffPin" maxlength="4" placeholder="Enter 4-digit PIN" required>
 
                 <label id="lblCustPhone" for="custPhone">Customer Phone Number</label>
-                <input type="tel" id="custPhone" placeholder="e.g. 1234567890" required>
+                <input type="tel" id="custPhone" placeholder="e.g. 1749799200" required>
 
                 <button type="submit" class="submit-btn" id="submitStampBtn">Add Stamp (1 Bill)</button>
             </form>
@@ -813,137 +825,140 @@
         }
 
         // Language Dictionary
-        const translations = {
-            en: {
-                langBtn: "العربية",
-                bookingBtn: "Book a Table",
-                contactBtn: "Contact Us",
-                stampModalBtn: "☕ Add Stamp",
-                themeDark: "Dark Theme",
-                themeLight: "Light Theme",
-                modalTitle: "Book a Table",
-                lblGuestName: "Name",
-                placeholderName: "Enter your name",
-                lblGuests: "Guests",
-                guestOpts: ["1 Person", "2 People", "3 People", "4 People", "5+ People"],
-                lblDate: "Date",
-                lblTime: "Time",
-                submitBtn: "Confirm Reservation",
-                waMessage: "Hello StarC Coffee, I would like to book a table:\n",
-                contactModalTitle: "Contact Us",
-                lblContactName: "Name",
-                lblContactMessage: "Message",
-                placeholderContactMessage: "Enter your message",
-                submitContactBtn: "Send Message",
-                waContactMessage: "Hello StarC Coffee, I have a message for you:\n",
-                stampModalTitle: "StarC Loyalty Stamp",
-                lblStaffPin: "Staff PIN",
-                placeholderPin: "Enter 4-digit PIN",
-                lblCustPhone: "Customer Phone Number",
-                submitStampBtn: "Add Stamp (1 Bill)",
-                mapSectionTitle: "Visit Our Location"
-            },
-            ar: {
-                langBtn: "English",
-                bookingBtn: "حجز طاولة",
-                contactBtn: "تواصل معنا",
-                stampModalBtn: "☕ إضافة ختم",
-                themeDark: "المظهر الداكن",
-                themeLight: "المظهر الفاتح",
-                modalTitle: "حجز طاولة",
-                lblGuestName: "الاسم",
-                placeholderName: "أدخل اسمك",
-                lblGuests: "عدد الضيوف",
-                guestOpts: ["شخص واحد", "شخصان", "3 أشخاص", "4 أشخاص", "5+ أشخاص"],
-                lblDate: "التاريخ",
-                lblTime: "الوقت",
-                submitBtn: "تأكيد الحجز",
-                waMessage: "مرحباً ستارك كافيه، أود حجز طاولة:\n",
-                contactModalTitle: "تواصل معنا",
-                lblContactName: "الاسم",
-                lblContactMessage: "الرسالة",
-                placeholderContactMessage: "أدخل رسالتك",
-                submitContactBtn: "إرسال الرسالة",
-                waContactMessage: "مرحباً ستارك كافيه، لدي استفسار/رسالة:\n",
-                stampModalTitle: "ختم الولاء ستارك",
-                lblStaffPin: "رمز الموظف",
-                placeholderPin: "أدخل الرمز (4 أرقام)",
-                lblCustPhone: "رقم هاتف الزبون",
-                submitStampBtn: "إضافة ختم (فاتورة واحدة)",
-                mapSectionTitle: "موقعنا على الخريطة"
-            }
-        };
+const translations = {
+    en: {
+        langBtn: "العربية",
+        bookingBtn: "Book a Table",
+        contactBtn: "Contact Us",
+        stampModalBtn: "☕ Add Stamp",
+        themeDark: "Dark Theme",
+        themeLight: "Light Theme",
+        modalTitle: "Book a Table",
+        lblGuestName: "Name",
+        placeholderName: "Enter your name",
+        lblGuests: "Guests",
+        guestOpts: ["1 Person", "2 People", "3 People", "4 People", "5+ People"],
+        lblDate: "Date",
+        lblTime: "Time",
+        submitBtn: "Confirm Reservation",
+        waMessage: "Hello StarC Coffee, I would like to book a table:\n",
+        contactModalTitle: "Contact Us",
+        lblContactName: "Name",
+        lblContactMessage: "Message",
+        placeholderContactMessage: "Enter your message",
+        submitContactBtn: "Send Message",
+        waContactMessage: "Hello StarC Coffee, I have a message for you:\n",
+        stampModalTitle: "StarC Loyalty Stamp",
+        lblStaffPin: "Staff PIN",
+        placeholderPin: "Enter 4-digit PIN",
+        lblCustPhone: "Customer Phone Number",
+        submitStampBtn: "Add Stamp (1 Bill)",
+        mapSectionTitle: "Visit Our Location",
+        navBtn: "📍 Open in Google Maps / Get Directions"
+    },
+    ar: {
+        langBtn: "English",
+        bookingBtn: "حجز طاولة",
+        contactBtn: "تواصل معنا",
+        stampModalBtn: "☕ إضافة ختم",
+        themeDark: "المظهر الداكن",
+        themeLight: "المظهر الفاتح",
+        modalTitle: "حجز طاولة",
+        lblGuestName: "الاسم",
+        placeholderName: "أدخل اسمك",
+        lblGuests: "عدد الضيوف",
+        guestOpts: ["شخص واحد", "شخصان", "3 أشخاص", "4 أشخاص", "5+ أشخاص"],
+        lblDate: "التاريخ",
+        lblTime: "الوقت",
+        submitBtn: "تأكيد الحجز",
+        waMessage: "مرحباً ستارك كافيه، أود حجز طاولة:\n",
+        contactModalTitle: "تواصل معنا",
+        lblContactName: "الاسم",
+        lblContactMessage: "الرسالة",
+        placeholderContactMessage: "أدخل رسالتك",
+        submitContactBtn: "إرسال الرسالة",
+        waContactMessage: "مرحباً ستارك كافيه، لدي استفسار/رسالة:\n",
+        stampModalTitle: "ختم الولاء ستارك",
+        lblStaffPin: "رمز الموظف",
+        placeholderPin: "أدخل الرمز (4 أرقام)",
+        lblCustPhone: "رقم هاتف الزبون",
+        submitStampBtn: "إضافة ختم (فاتورة واحدة)",
+        mapSectionTitle: "موقعنا على الخريطة",
+        navBtn: "📍 فتح في خرائط جوجل / الحصول على الاتجاهات"
+    }
+};
 
-        let currentLang = 'en';
+let currentLang = 'en';
 
-        // Theme Switcher
-        function toggleTheme() {
-            const body = document.body;
-            const themeBtnText = document.getElementById('themeBtnText');
-            if (body.getAttribute('data-theme') === 'dark-espresso') {
-                body.removeAttribute('data-theme');
-                themeBtnText.textContent = translations[currentLang].themeDark;
-            } else {
-                body.setAttribute('data-theme', 'dark-espresso');
-                themeBtnText.textContent = translations[currentLang].themeLight;
-            }
-        }
+// Theme Switcher
+function toggleTheme() {
+    const body = document.body;
+    const themeBtnText = document.getElementById('themeBtnText');
+    if (body.getAttribute('data-theme') === 'dark-espresso') {
+        body.removeAttribute('data-theme');
+        themeBtnText.textContent = translations[currentLang].themeDark;
+    } else {
+        body.setAttribute('data-theme', 'dark-espresso');
+        themeBtnText.textContent = translations[currentLang].themeLight;
+    }
+}
 
-        // Language Switcher
-        function toggleLanguage() {
-            const html = document.documentElement;
-            const isDark = document.body.getAttribute('data-theme') === 'dark-espresso';
+// Language Switcher
+function toggleLanguage() {
+    const html = document.documentElement;
+    const isDark = document.body.getAttribute('data-theme') === 'dark-espresso';
 
-            if (currentLang === 'en') {
-                currentLang = 'ar';
-                html.setAttribute('dir', 'rtl');
-                html.setAttribute('lang', 'ar');
-            } else {
-                currentLang = 'en';
-                html.setAttribute('dir', 'ltr');
-                html.setAttribute('lang', 'en');
-            }
+    if (currentLang === 'en') {
+        currentLang = 'ar';
+        html.setAttribute('dir', 'rtl');
+        html.setAttribute('lang', 'ar');
+    } else {
+        currentLang = 'en';
+        html.setAttribute('dir', 'ltr');
+        html.setAttribute('lang', 'en');
+    }
 
-            const t = translations[currentLang];
+    const t = translations[currentLang];
 
-            // Header/Nav
-            document.getElementById('langBtn').textContent = t.langBtn;
-            document.getElementById('bookingBtn').textContent = t.bookingBtn;
-            document.getElementById('contactBtn').textContent = t.contactBtn;
-            document.getElementById('stampModalBtn').textContent = t.stampModalBtn;
-            document.getElementById('themeBtnText').textContent = isDark ? t.themeLight : t.themeDark;
-            document.getElementById('mapSectionTitle').textContent = t.mapSectionTitle;
+    // Header/Nav
+    document.getElementById('langBtn').textContent = t.langBtn;
+    document.getElementById('bookingBtn').textContent = t.bookingBtn;
+    document.getElementById('contactBtn').textContent = t.contactBtn;
+    document.getElementById('stampModalBtn').textContent = t.stampModalBtn;
+    document.getElementById('themeBtnText').textContent = isDark ? t.themeLight : t.themeDark;
+    document.getElementById('mapSectionTitle').textContent = t.mapSectionTitle;
+    document.getElementById('navBtn').textContent = t.navBtn;
 
-            // Booking Modal
-            document.getElementById('modalTitle').textContent = t.modalTitle;
-            document.getElementById('lblGuestName').textContent = t.lblGuestName;
-            document.getElementById('guestName').placeholder = t.placeholderName;
-            document.getElementById('lblGuests').textContent = t.lblGuests;
-            document.getElementById('lblDate').textContent = t.lblDate;
-            document.getElementById('lblTime').textContent = t.lblTime;
-            document.getElementById('submitBookingBtn').textContent = t.submitBtn;
+    // Booking Modal
+    document.getElementById('modalTitle').textContent = t.modalTitle;
+    document.getElementById('lblGuestName').textContent = t.lblGuestName;
+    document.getElementById('guestName').placeholder = t.placeholderName;
+    document.getElementById('lblGuests').textContent = t.lblGuests;
+    document.getElementById('lblDate').textContent = t.lblDate;
+    document.getElementById('lblTime').textContent = t.lblTime;
+    document.getElementById('submitBookingBtn').textContent = t.submitBtn;
 
-            // Contact Modal
-            document.getElementById('contactModalTitle').textContent = t.contactModalTitle;
-            document.getElementById('lblContactName').textContent = t.lblContactName;
-            document.getElementById('contactName').placeholder = t.placeholderName;
-            document.getElementById('lblContactMessage').textContent = t.lblContactMessage;
-            document.getElementById('contactMessage').placeholder = t.placeholderContactMessage;
-            document.getElementById('submitContactBtn').textContent = t.submitContactBtn;
+    // Contact Modal
+    document.getElementById('contactModalTitle').textContent = t.contactModalTitle;
+    document.getElementById('lblContactName').textContent = t.lblContactName;
+    document.getElementById('contactName').placeholder = t.placeholderName;
+    document.getElementById('lblContactMessage').textContent = t.lblContactMessage;
+    document.getElementById('contactMessage').placeholder = t.placeholderContactMessage;
+    document.getElementById('submitContactBtn').textContent = t.submitContactBtn;
 
-            // Stamp Modal
-            document.getElementById('stampModalTitle').textContent = t.stampModalTitle;
-            document.getElementById('lblStaffPin').textContent = t.lblStaffPin;
-            document.getElementById('staffPin').placeholder = t.placeholderPin;
-            document.getElementById('lblCustPhone').textContent = t.lblCustPhone;
-            document.getElementById('submitStampBtn').textContent = t.submitStampBtn;
+    // Stamp Modal
+    document.getElementById('stampModalTitle').textContent = t.stampModalTitle;
+    document.getElementById('lblStaffPin').textContent = t.lblStaffPin;
+    document.getElementById('staffPin').placeholder = t.placeholderPin;
+    document.getElementById('lblCustPhone').textContent = t.lblCustPhone;
+    document.getElementById('submitStampBtn').textContent = t.submitStampBtn;
 
-            // Guest Select Options
-            const guestSelect = document.getElementById('guests');
-            for (let i = 0; i < guestSelect.options.length; i++) {
-                guestSelect.options[i].text = t.guestOpts[i];
-            }
-        }
+    // Guest Select Options
+    const guestSelect = document.getElementById('guests');
+    for (let i = 0; i < guestSelect.options.length; i++) {
+        guestSelect.options[i].text = t.guestOpts[i];
+    }
+}
 
         // Modal Controls
         function openBooking() { document.getElementById('bookingModal').style.display = 'flex'; }
