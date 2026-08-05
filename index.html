@@ -328,27 +328,34 @@
         }
 
         /* Form Controls */
-        #bookingForm {
+        #bookingForm, #contactForm {
             display: flex;
             flex-direction: column;
             gap: 12px;
             margin-top: 16px;
         }
 
-        #bookingForm label {
+        #bookingForm label, #contactForm label {
             font-size: 14px;
             font-weight: 600;
             color: var(--gold-primary);
         }
 
         #bookingForm input, 
-        #bookingForm select {
+        #bookingForm select,
+        #contactForm input,
+        #contactForm textarea {
             padding: 10px;
             border-radius: 4px;
             border: 1px solid var(--border-gold);
             background: var(--bg-dark);
             color: var(--text-light);
             font-family: inherit;
+        }
+
+        #contactForm textarea {
+            resize: vertical;
+            min-height: 80px;
         }
 
         .submit-btn {
@@ -412,9 +419,10 @@
 </head>
 <body>
 
-    <!-- Controls Container: Theme, Language & Booking Toggle Buttons -->
+    <!-- Controls Container: Theme, Language, Booking & Contact Toggle Buttons -->
     <div class="controls-container">
         <button class="action-btn" onclick="openBooking()" id="bookingBtn">Book a Table</button>
+        <button class="action-btn" onclick="openContact()" id="contactBtn">Contact Us</button>
         <button class="action-btn" onclick="toggleTheme()" id="themeBtn">
             <span>◐</span> <span id="themeBtnText">Dark Theme</span>
         </button>
@@ -437,7 +445,6 @@
         <h2 class="section-title">Signature Menu</h2>
 
         <div class="menu-grid">
-
             <!-- Item 1: The Velvet Espresso -->
             <div class="menu-card">
                 <div class="product-img-container">
@@ -653,11 +660,9 @@
             </div>
 
 
-</div>
+
+        </div>
     </div>
-
-
-
 
     <!-- Booking Modal -->
     <div id="bookingModal" class="modal">
@@ -688,6 +693,23 @@
         </div>
     </div>
 
+    <!-- Contact Modal -->
+    <div id="contactModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeContact()">&times;</span>
+            <h3 id="contactModalTitle">Contact Us</h3>
+            <form id="contactForm" onsubmit="handleContactSubmit(event)">
+                <label id="lblContactName" for="contactName">Name</label>
+                <input type="text" id="contactName" required placeholder="Enter your name">
+
+                <label id="lblContactMessage" for="contactMessage">Message</label>
+                <textarea id="contactMessage" required placeholder="Enter your message"></textarea>
+
+                <button type="submit" class="submit-btn" id="submitContactBtn">Send Message</button>
+            </form>
+        </div>
+    </div>
+
     <footer>
         <p>&copy; 2026 StarC Coffee & Specialty Drinks. All Rights Reserved.</p>
     </footer>
@@ -701,6 +723,7 @@
             en: {
                 langBtn: "العربية",
                 bookingBtn: "Book a Table",
+                contactBtn: "Contact Us",
                 themeDark: "Dark Theme",
                 themeLight: "Light Theme",
                 modalTitle: "Book a Table",
@@ -711,11 +734,19 @@
                 lblDate: "Date",
                 lblTime: "Time",
                 submitBtn: "Confirm Reservation",
-                waMessage: "Hello StarC Coffee, I would like to book a table:\n"
+                waMessage: "Hello StarC Coffee, I would like to book a table:\n",
+                // Contact Modal Strings
+                contactModalTitle: "Contact Us",
+                lblContactName: "Name",
+                lblContactMessage: "Message",
+                placeholderContactMessage: "Enter your message",
+                submitContactBtn: "Send Message",
+                waContactMessage: "Hello StarC Coffee, I have a message for you:\n"
             },
             ar: {
                 langBtn: "English",
                 bookingBtn: "حجز طاولة",
+                contactBtn: "تواصل معنا",
                 themeDark: "المظهر الداكن",
                 themeLight: "المظهر الفاتح",
                 modalTitle: "حجز طاولة",
@@ -726,7 +757,14 @@
                 lblDate: "التاريخ",
                 lblTime: "الوقت",
                 submitBtn: "تأكيد الحجز",
-                waMessage: "مرحباً ستارك كافيه، أود حجز طاولة:\n"
+                waMessage: "مرحباً ستارك كافيه، أود حجز طاولة:\n",
+                // Contact Modal Strings
+                contactModalTitle: "تواصل معنا",
+                lblContactName: "الاسم",
+                lblContactMessage: "الرسالة",
+                placeholderContactMessage: "أدخل رسالتك",
+                submitContactBtn: "إرسال الرسالة",
+                waContactMessage: "مرحباً ستارك كافيه، لدي استفسار/رسالة:\n"
             }
         };
 
@@ -765,9 +803,10 @@
             // Update Header / Nav controls
             document.getElementById('langBtn').textContent = t.langBtn;
             document.getElementById('bookingBtn').textContent = t.bookingBtn;
+            document.getElementById('contactBtn').textContent = t.contactBtn;
             document.getElementById('themeBtnText').textContent = isDark ? t.themeLight : t.themeDark;
 
-            // Update Modal UI
+            // Update Booking Modal UI
             document.getElementById('modalTitle').textContent = t.modalTitle;
             document.getElementById('lblGuestName').textContent = t.lblGuestName;
             document.getElementById('guestName').placeholder = t.placeholderName;
@@ -776,6 +815,14 @@
             document.getElementById('lblTime').textContent = t.lblTime;
             document.getElementById('submitBookingBtn').textContent = t.submitBtn;
 
+            // Update Contact Modal UI
+            document.getElementById('contactModalTitle').textContent = t.contactModalTitle;
+            document.getElementById('lblContactName').textContent = t.lblContactName;
+            document.getElementById('contactName').placeholder = t.placeholderName;
+            document.getElementById('lblContactMessage').textContent = t.lblContactMessage;
+            document.getElementById('contactMessage').placeholder = t.placeholderContactMessage;
+            document.getElementById('submitContactBtn').textContent = t.submitContactBtn;
+
             // Update Guest Select Options
             const guestSelect = document.getElementById('guests');
             for (let i = 0; i < guestSelect.options.length; i++) {
@@ -783,7 +830,7 @@
             }
         }
 
-        // Booking Modal Controls
+        // Modal Controls
         function openBooking() {
             document.getElementById('bookingModal').style.display = 'flex';
         }
@@ -792,7 +839,15 @@
             document.getElementById('bookingModal').style.display = 'none';
         }
 
-        // Form Submission with WhatsApp Link Generation
+        function openContact() {
+            document.getElementById('contactModal').style.display = 'flex';
+        }
+
+        function closeContact() {
+            document.getElementById('contactModal').style.display = 'none';
+        }
+
+        // Form Submission - Booking via WhatsApp
         function handleBookingSubmit(event) {
             event.preventDefault();
 
@@ -804,31 +859,48 @@
 
             const t = translations[currentLang];
 
-            // Construct formatted text message
             let textMessage = `${t.waMessage}`;
             textMessage += `- ${t.lblGuestName}: ${name}\n`;
             textMessage += `- ${t.lblGuests}: ${guestsText}\n`;
             textMessage += `- ${t.lblDate}: ${date}\n`;
             textMessage += `- ${t.lblTime}: ${time}`;
 
-            // URL encode the message
             const encodedMessage = encodeURIComponent(textMessage);
-
-            // Create WhatsApp URL
-            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
-
-            // Open WhatsApp in a new tab
-            window.open(whatsappUrl, '_blank');
+            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`, '_blank');
 
             closeBooking();
             document.getElementById('bookingForm').reset();
         }
 
+        // Form Submission - Contact via WhatsApp
+        function handleContactSubmit(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('contactName').value;
+            const message = document.getElementById('contactMessage').value;
+
+            const t = translations[currentLang];
+
+            let textMessage = `${t.waContactMessage}`;
+            textMessage += `- ${t.lblContactName}: ${name}\n`;
+            textMessage += `- ${t.lblContactMessage}: ${message}`;
+
+            const encodedMessage = encodeURIComponent(textMessage);
+            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`, '_blank');
+
+            closeContact();
+            document.getElementById('contactForm').reset();
+        }
+
         // Close Modal when clicking outside content
         window.onclick = function(event) {
-            const modal = document.getElementById('bookingModal');
-            if (event.target === modal) {
+            const bookingModal = document.getElementById('bookingModal');
+            const contactModal = document.getElementById('contactModal');
+            if (event.target === bookingModal) {
                 closeBooking();
+            }
+            if (event.target === contactModal) {
+                closeContact();
             }
         };
     </script>
