@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دفتر المحاسبة - مقاهي StarC</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f5f2eb; 
+            color: #3E2723;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Login Box Styles */
+        .login-box { 
+            background: #ffffff; 
+            padding: 40px 30px; 
+            width: 90%;
+            max-width: 420px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(62, 39, 35, 0.12); 
+            text-align: center;
+            border: 1px solid #d0c8b8;
+        }
+        .login-box h2 {
+            font-size: 22px;
+            color: #3E2723;
+            margin-bottom: 10px;
+        }
+        .login-box p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        input[type="password"] { 
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 15px; 
+            border: 1px solid #d0c8b8; 
+            border-radius: 6px; 
+            font-size: 16px; 
+            text-align: center; 
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="password"]:focus {
+            border-color: #3E2723;
+        }
+        button { 
+            width: 100%;
+            background-color: #3E2723; 
+            color: #ffffff; 
+            border: none; 
+            padding: 12px; 
+            font-size: 16px; 
+            font-weight: bold;
+            border-radius: 6px; 
+            cursor: pointer; 
+            transition: background-color 0.2s;
+        }
+        button:hover { 
+            background-color: #5D4037; 
+        }
+        #error-msg { 
+            color: #d32f2f; 
+            font-size: 14px;
+            display: none; 
+            margin-top: 12px; 
+        }
+
+        /* Full Screen Embedded Sheet Styles */
+        #app-container { 
+            display: none; 
+            width: 100vw; 
+            height: 100vh; 
+            background: #ffffff;
+        }
+        iframe { 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Password Access Screen -->
+    <div id="login-screen" class="login-box">
+        <h2>نظام المحاسبة - StarC Cafe</h2>
+        <p>ادخل كلمة المرور لعرض دفتر الحسابات</p>
+        <form onsubmit="checkPassword(event)">
+            <input type="password" id="access-pass" placeholder="كلمة المرور" required>
+            <button type="submit">دخول النظام</button>
+        </form>
+        <p id="error-msg">كلمة المرور غير صحيحة، يرجى المحاولة مجدداً.</p>
+    </div>
+
+    <!-- Embedded Google Sheet -->
+    <div id="app-container">
+        <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vSBeHHmUM3xqBlqmH84qc1BSqKyjFCLfSyyPOfunsk63yxbO72ZpxdCQys1SjOTzTinTpVI_chAumoa/pubhtml?widget=true&amp;headers=false"></iframe>
+    </div>
+
+    <script>
+        function checkPassword(event) {
+            event.preventDefault(); // Prevent form reload
+            const passInput = document.getElementById('access-pass').value;
+            const errorMsg = document.getElementById('error-msg');
+            
+            // Set your secret password here (Change 'StarC2026' to your preferred password)
+            const correctPassword = "StarC2026";
+
+            if (passInput === correctPassword) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.body.style.padding = '0';
+                document.getElementById('app-container').style.display = 'block';
+            } else {
+                errorMsg.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
