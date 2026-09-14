@@ -80,6 +80,7 @@
             align-items: center;
             gap: 6px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            text-decoration: none;
         }
 
         .action-btn:hover {
@@ -280,6 +281,47 @@
             margin-bottom: 20px;
         }
 
+        .map-header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .map-header-container .section-title {
+            margin-bottom: 0;
+            text-align: left;
+        }
+
+        .map-header-container .section-title::after {
+            display: none;
+        }
+
+        .directions-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--gold-primary);
+            border-radius: 25px;
+            padding: 10px 22px;
+            color: var(--gold-primary);
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+        }
+
+        .directions-btn:hover {
+            background: var(--gold-primary);
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(203, 161, 53, 0.4);
+            transform: translateY(-2px);
+        }
+
         .map-wrapper {
             width: 100%;
             height: 400px;
@@ -342,6 +384,10 @@
             border-right: 3px solid var(--gold-primary);
         }
 
+        html[dir="rtl"] .map-header-container .section-title {
+            text-align: right;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .logo-title {
@@ -350,6 +396,14 @@
             .controls-container {
                 top: 10px;
                 right: 10px;
+            }
+            .map-header-container {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .map-header-container .section-title {
+                text-align: center;
             }
         }
     </style>
@@ -393,16 +447,21 @@
                         <span class="item-title-ar">إسبريسو دوبيو</span>
                     </div>
                     <p class="item-desc-en">A double shot of our finest signature blend for those who appreciate depth, intensity, and a lingering, luxurious finish.</p>
-                    <p class="item-desc-ar">جرعة مزدوجة من أجود خلطاتنا المميزة لأولئك الذين يقدرون العمق والشدة والنهاية الفاخرة والطويلة.</p>
+                    <p class="item-desc-ar">جرعة مزدوجة من أجود خلطاتنا المميزة لأولئك الذين يقدرون العمق والشّدة والنهاية الفاخرة والطويلة.</p>
                 </div>
             </div>
         </div>
 
         <!-- Map Section -->
         <div class="map-section">
-            <h2 class="section-title">Visit Us</h2>
+            <div class="map-header-container">
+                <h2 class="section-title">Visit Us</h2>
+                <a href="https://www.google.com/maps/search/?api=1&query=33.487944,36.352556" target="_blank" rel="noopener" class="directions-btn">
+                    <span>📍</span> Get Directions
+                </a>
+            </div>
             <div class="map-wrapper">
-                <iframe width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=Jaramana,Damascus&t=&z=15&ie=UTF8&iwloc=&output=embed"></iframe>
+                <iframe width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?q=33.487944,36.352556&t=&z=17&ie=UTF8&iwloc=&output=embed"></iframe>
             </div>
         </div>
     </div>
