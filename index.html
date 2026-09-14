@@ -99,7 +99,7 @@
         }
 
         .logo-container {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .logo-star {
@@ -124,11 +124,41 @@
             color: var(--text-light);
             text-transform: uppercase;
             margin-top: 5px;
+            margin-bottom: 20px;
+        }
+
+        /* Header Social Links */
+        .header-socials {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .header-socials a {
+            color: var(--gold-primary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border: 1px solid var(--border-gold);
+            padding: 5px 14px;
+            border-radius: 20px;
+            background: var(--bg-card);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .header-socials a:hover {
+            background: var(--gold-primary);
+            color: #ffffff;
+            border-color: var(--gold-primary);
+            transform: translateY(-2px);
         }
 
         .hero-tagline {
             max-width: 700px;
-            margin: 30px auto 0;
+            margin: 0 auto;
             font-family: var(--font-heading);
             font-size: 1.3rem;
             color: var(--gold-light);
@@ -140,7 +170,7 @@
             font-family: var(--font-arabic);
             font-size: 1.2rem;
             color: var(--gold-primary);
-            margin-top: 30px;
+            margin-top: 20px;
             font-style: normal;
         }
 
@@ -428,6 +458,14 @@
             <div class="logo-title">StarC</div>
             <div class="logo-subtitle">Coffee</div>
         </div>
+        
+        <!-- Header Social Links -->
+        <div class="header-socials">
+            <a href="https://www.facebook.com/profile.php?id=61594368716399" target="_blank" rel="noopener">Facebook</a>
+            <a href="https://www.instagram.com/starccafe.2026?utm_source=qr&stkn=MXV3aXA4aHQzZ2tqeA==" target="_blank" rel="noopener">Instagram</a>
+            <a href="https://www.tiktok.com/@starc.cafe?_r=1&_t=ZG-99jH4IJuaSP" target="_blank" rel="noopener">TikTok</a>
+        </div>
+
         <p class="hero-tagline">"A journey through coffee from the cradle of civilization to the world."</p>
         <p class="hero-tagline-ar">"رحلة عبر القهوة من مهد الحضارة إلى أنحاء العالم"</p>
     </header>
@@ -469,9 +507,9 @@
     <!-- Footer -->
     <footer>
         <div class="social-links">
-            <a href="https://www.facebook.com/profile.php?id=61594368716399#" target="_blank" rel="noopener">Facebook</a>
-            <a href="https://www.instagram.com/starccafe.2026/" target="_blank" rel="noopener">Instagram</a>
-            <a href="https://www.tiktok.com/@starc.cafe" target="_blank" rel="noopener">TikTok</a>
+            <a href="https://www.facebook.com/profile.php?id=61594368716399" target="_blank" rel="noopener">Facebook</a>
+            <a href="https://www.instagram.com/starccafe.2026?utm_source=qr&stkn=MXV3aXA4aHQzZ2tqeA==" target="_blank" rel="noopener">Instagram</a>
+            <a href="https://www.tiktok.com/@starc.cafe?_r=1&_t=ZG-99jH4IJuaSP" target="_blank" rel="noopener">TikTok</a>
             <a href="https://wa.me/963984609240" target="_blank" rel="noopener">WhatsApp</a>
         </div>
         <p>&copy; 2026 StarC Coffee. All rights reserved.</p>
