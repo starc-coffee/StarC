@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ستار سي كافيه | أدر العجلة واربح</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#f2efe8;--ink:#1c2b28;--muted:#5c6b67;--panel:#fff;--line:#d9d4c8;--accent:#1f5c52;--accent-ink:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#10211e;--ink:#f3efe6;--muted:#9fb3ad;--panel:#18302b;--line:#2b4a43;--accent:#f2b84b;--accent-ink:#1c2b28}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Cairo","Segoe UI",Tahoma,sans-serif;min-height:100vh;padding:env(safe-area-inset-top,0) 16px env(safe-area-inset-bottom,0)}
+main{max-width:560px;margin:0 auto;padding:20px 0 40px}
+h1{font-size:clamp(2rem,7vw,3rem);margin:0;line-height:1.2;text-align:center}
+.sub{text-align:center;color:var(--muted);margin:6px 0 0;font-size:1.05rem}
+.note{margin:12px auto 0;padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:14px;text-align:center;line-height:1.7}
+.stage{position:relative;width:min(100%,520px);margin:18px auto 0;aspect-ratio:1}
+canvas{width:100%;height:100%;display:block}
+.pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);border-left:16px solid transparent;border-right:16px solid transparent;border-top:34px solid var(--ink);filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));z-index:2}
+.hub{position:absolute;inset:0;margin:auto;width:92px;height:92px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font:700 1.25rem "Cairo","Segoe UI",Tahoma,sans-serif;cursor:pointer;box-shadow:0 0 0 6px var(--bg),0 4px 14px rgba(0,0,0,.35);z-index:2}
+.hub:disabled{opacity:.7;cursor:default}
+.hub:focus-visible,.card button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:10}
+.modal.on{display:flex}
+.card{background:var(--panel);border-radius:24px;padding:32px 24px;text-align:center;max-width:420px;width:100%;border:4px solid var(--accent);animation:pop .4s ease-out}
+@keyframes pop{from{transform:scale(.7)}to{transform:scale(1)}}
+.card h3{margin:0;font-size:1.1rem;color:var(--muted);font-weight:500}
+.prize{font-size:clamp(2rem,9vw,3rem);font-weight:700;margin:8px 0 14px;line-height:1.2}
+.card .code{margin:0 0 16px;color:var(--muted);line-height:1.7}
+.card button{padding:12px 22px;border-radius:12px;border:0;background:var(--accent);color:var(--accent-ink);font:700 1rem "Cairo","Segoe UI",Tahoma,sans-serif;cursor:pointer}
+@media(prefers-reduced-motion:reduce){.card{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>ستار سي كافيه</h1>
+  <p class="sub" id="sub">جاري التحميل...</p>
+  <p class="note">بعد الدوران: الجائزة صالحة لمرة واحدة. خذ لقطة شاشة (سكرين شوت) والصقها في التعليقات.<br>يمكنك أيضًا إهداؤها لشخص آخر بعمل منشن (Tag) له.</p>
+  <div class="stage">
+    <div class="pointer"></div>
+    <canvas id="c"></canvas>
+    <button class="hub" id="spin" aria-label="أدر العجلة" disabled>أدر</button>
+  </div>
+</main>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="card">
+    <h3>مبروك! لقد ربحت</h3>
+    <div class="prize" id="prize"></div>
+    <div class="code" id="code"></div>
+    <button id="close">إغلاق</button>
+  </div>
+</div>
+
+<script>
+const API='spin-counter.php';           // keep this file in the same folder as the page
+const KEY='starc-spin-once-v1';
+const COLORS=['#f2b84b','#e9654b','#6cc5a8','#7aa7e0','#d98bbd','#a9c95b'];
+const DARK_TEXT=['#f2b84b','#6cc5a8','#a9c95b','#7aa7e0'];
+let prizes=[],slices=[],rot=0,spinning=false,closed=false;
+const $=id=>document.getElementById(id);
+const cv=$('c'),ctx=cv.getContext('2d');
+function ls(f){try{return f()}catch(e){return null}}
+function saved(){return ls(()=>JSON.parse(localStorage.getItem(KEY)))}
+
+async function api(action,post){
+  const r=await fetch(API+'?action='+action,{method:post?'POST':'GET',cache:'no-store'});
+  if(!r.ok&&r.status!==200)throw new Error('http');
+  return r.json();
+}
+function build(){
+  const left=prizes.map((p,i)=>({i,n:p.n}));slices=[];
+  let more=true;
+  while(more){more=false;for(const l of left){if(l.n>0){slices.push(l.i);l.n--;more=true}}}
+  prizes.forEach(p=>{p.n=p.n}); // counts were consumed on copies only
+}
+function draw(){
+  const dpr=window.devicePixelRatio||1,s=cv.clientWidth;
+  if(!s)return;
+  cv.width=s*dpr;cv.height=s*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  const r=s/2-8,cx=s/2,cy=s/2,N=slices.length||1,arc=2*Math.PI/N;
+  ctx.clearRect(0,0,s,s);
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(rot);
+  slices.forEach((pi,k)=>{
+    const a0=-Math.PI/2+k*arc,col=COLORS[pi%COLORS.length];
+    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,r,a0,a0+arc);ctx.closePath();
+    ctx.fillStyle=col;ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='rgba(255,255,255,.85)';ctx.stroke();
+    ctx.save();ctx.rotate(a0+arc/2);ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillStyle=DARK_TEXT.includes(col)?'#1c2b28':'#fff';
+    const fs=Math.max(11,Math.min(22,s/24,(r*arc)/2.4));
+    ctx.font='700 '+fs+'px Cairo,Segoe UI,Tahoma,sans-serif';
+    ctx.fillText(prizes[pi].name,r-16,0,r*0.62);ctx.restore();
+  });
+  ctx.restore();
+  ctx.beginPath();ctx.arc(cx,cy,r+3,0,Math.PI*2);ctx.lineWidth=6;ctx.strokeStyle='rgba(0,0,0,.25)';ctx.stroke();
+}
+function showClosed(){
+  closed=true;$('spin').disabled=true;$('spin').textContent='انتهى';
+  $('sub').textContent='انتهى العرض. شكرًا لمشاركتكم!';
+}
+function lock(){
+  const r=saved();
+  if(r){$('spin').disabled=true;$('spin').textContent='تم';
+    $('sub').textContent='لقد ربحت: '+r.p+' (الرمز '+r.c+'). لكل شخص دورة واحدة فقط.';return true}
+  return false;
+}
+function animateTo(k,done){
+  const N=slices.length,arc=2*Math.PI/N;
+  const base=-(k+0.5)*arc+(Math.random()*0.7-0.35)*arc;
+  let target=base+Math.PI*2*Math.ceil((rot-base)/(Math.PI*2));
+  target+=Math.PI*2*(6+Math.floor(Math.random()*3));
+  const from=rot,dur=6000,t0=performance.now();
+  const step=t=>{
+    const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,4);
+    rot=from+(target-from)*e;draw();
+    if(p<1)requestAnimationFrame(step);else done();
+  };
+  requestAnimationFrame(step);
+}
+async function spin(){
+  if(spinning||closed||saved())return;
+  spinning=true;$('spin').disabled=true;
+  let d;
+  try{d=await api('spin',true)}
+  catch(e){spinning=false;$('spin').disabled=false;$('sub').textContent='تعذر الاتصال. حاول مرة أخرى.';return}
+  if(!d.ok){spinning=false;showClosed();return}
+  const options=[];slices.forEach((pi,k)=>{if(pi===d.index)options.push(k)});
+  const k=options[Math.floor(Math.random()*options.length)];
+  animateTo(k,()=>{
+    spinning=false;
+    ls(()=>localStorage.setItem(KEY,JSON.stringify({p:d.prize,c:d.code})));
+    $('prize').textContent=d.prize;
+    $('code').textContent='أظهر هذه الشاشة للموظف. الرمز: '+d.code;
+    $('modal').classList.add('on');
+    lock();
+  });
+}
+$('spin').onclick=spin;
+$('close').onclick=()=>$('modal').classList.remove('on');
+$('modal').onclick=e=>{if(e.target.id==='modal')$('modal').classList.remove('on')};
+window.addEventListener('resize',draw);
+
+(async function init(){
+  try{
+    const d=await api('status');
+    prizes=d.prizes.map(p=>({name:p[0],n:p[1]}));
+    build();draw();
+    if(lock())return;
+    if(!d.open){showClosed();return}
+    $('sub').textContent='أدر العجلة واربح! اضغط على الزر في الوسط';
+    $('spin').disabled=false;
+  }catch(e){
+    $('sub').textContent='تعذر تحميل العجلة. أعد تحميل الصفحة.';
+  }
+})();
+</script>
+</body>
+</html>
