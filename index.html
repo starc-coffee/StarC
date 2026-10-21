@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="dark-espresso">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StarC Coffee | A Journey Through Coffee</title>
+    <!-- Custom Favicon: Gold Star Logo -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☕</text></svg>">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cairo:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Default Palette: Clean Light Theme */
+        :root {
+            --bg-dark: #fbf9f5;
+            --bg-card: #ffffff;
+            --gold-primary: #a37c27;
+            --gold-light: #523f14;
+            --text-light: #2b2621;
+            --text-muted: #6e655f;
+            --border-gold: rgba(163, 124, 39, 0.25);
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            --font-heading: 'Playfair Display', serif;
+            --font-script: 'Alex Brush', cursive;
+            --font-body: 'Poppins', sans-serif;
+            --font-arabic: 'Cairo', sans-serif;
+        }
+
+        /* Dark Signature Warm Espresso Theme */
+        [data-theme="dark-espresso"] {
+            --bg-dark: #0a0604;
+            --bg-card: #18100c;
+            --gold-primary: #cba135;
+            --gold-light: #ebd68a;
+            --text-light: #fdfaf7;
+            --text-muted: #b8a295;
+            --border-gold: rgba(203, 161, 53, 0.4);
+            --card-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: var(--font-body);
+            line-height: 1.6;
+            overflow-x: hidden;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        /* Controls Container */
+        .controls-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .action-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--gold-primary);
+            border-radius: 20px;
+            padding: 6px 16px;
+            cursor: pointer;
+            color: var(--gold-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            background: var(--gold-primary);
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(163, 124, 39, 0.3);
+        }
+
+        /* Dropdown Styles for Management Menu */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 5px;
+            background-color: var(--bg-card);
+            min-width: 160px;
+            border: 1px solid var(--border-gold);
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            z-index: 1001;
+            padding: 6px;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        html[dir="rtl"] .dropdown-menu {
+            right: auto;
+            left: 0;
+        }
+
+        .dropdown.show .dropdown-menu {
+            display: flex;
+        }
+
+        .dropdown-item {
+            background: transparent;
+            border: none;
+            color: var(--gold-primary);
+            padding: 8px 12px;
+            text-align: inherit;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dropdown-item:hover {
+            background: var(--gold-primary);
+            color: #ffffff;
+        }
+
+        /* Header & Hero */
+        header {
+            text-align: center;
+            padding: 80px 20px 40px;
+            background: radial-gradient(circle at center, rgba(163, 124, 39, 0.08) 0%, var(--bg-dark) 100%);
+            border-bottom: 1px solid var(--border-gold);
+            transition: border-color 0.4s ease, background 0.4s ease;
+        }
+
+        .logo-container {
+            margin-bottom: 15px;
+        }
+
+        .logo-star {
+            color: var(--gold-primary);
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: -15px;
+            transition: color 0.4s ease;
+        }
+
+        .logo-title {
+            font-family: var(--font-script);
+            font-size: 4.5rem;
+            color: var(--gold-primary);
+            line-height: 1;
+            transition: color 0.4s ease;
+        }
+
+        .logo-subtitle {
+            letter-spacing: 4px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            margin-top: 5px;
+            margin-bottom: 20px;
+        }
+
+        /* Header Social Links */
+        .header-socials {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .header-socials a {
+            color: var(--gold-primary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border: 1px solid var(--border-gold);
+            padding: 5px 14px;
+            border-radius: 20px;
+            background: var(--bg-card);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .header-socials a:hover {
+            background: var(--gold-primary);
+            color: #ffffff;
+            border-color: var(--gold-primary);
+            transform: translateY(-2px);
+        }
+
+        .hero-tagline {
+            max-width: 700px;
+            margin: 0 auto;
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            color: var(--gold-light);
+            font-style: italic;
+            transition: color 0.4s ease;
+        }
+
+        .hero-tagline-ar {
+            font-family: var(--font-arabic);
+            font-size: 1.2rem;
+            color: var(--gold-primary);
+            margin-top: 20px;
+            font-style: normal;
+        }
+
+        /* Dynamic Language Visibility Rules */
+        .item-title-ar, .item-desc-ar, .hero-tagline-ar {
+            display: none;
+        }
+
+        html[dir="rtl"] .item-title-en,
+        html[dir="rtl"] .item-desc-en,
+        html[dir="rtl"] .hero-tagline {
+            display: none;
+        }
+
+        html[dir="rtl"] .item-title-ar,
+        html[dir="rtl"] .item-desc-ar,
+        html[dir="rtl"] .hero-tagline-ar {
+            display: block;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Menu Section */
+        .section-title {
+            text-align: center;
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            color: var(--gold-primary);
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '★';
+            display: block;
+            font-size: 1rem;
+            margin-top: 5px;
+            color: var(--gold-light);
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .menu-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-gold);
+            border-left: 3px solid var(--gold-primary);
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: var(--card-shadow);
+            transition: all 0.4s ease;
+        }
+
+        .menu-card:hover {
+            border-color: var(--gold-primary);
+            transform: translateY(-3px);
+        }
+
+        .product-img-container {
+            width: 100%;
+            height: 220px;
+            background-color: rgba(0,0,0,0.05);
+            border-bottom: 1px solid var(--border-gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .product-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .menu-card:hover .product-img {
+            transform: scale(1.03);
+        }
+
+        .menu-card-body {
+            padding: 20px;
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 10px;
+        }
+
+        .item-title-en {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            color: var(--gold-light);
+            font-weight: 600;
+        }
+
+        .item-title-ar {
+            font-family: var(--font-arabic);
+            font-size: 1.25rem;
+            color: var(--gold-primary);
+            font-weight: 700;
+            width: 100%;
+            text-align: right;
+        }
+
+        .item-desc-en {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .item-desc-ar {
+            font-family: var(--font-arabic);
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            direction: rtl;
+            text-align: right;
+            line-height: 1.6;
+        }
+
+        /* Map Section */
+        .map-section {
+            margin-top: 60px;
+            margin-bottom: 20px;
+        }
+
+        .map-header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .map-header-container .section-title {
+            margin-bottom: 0;
+            text-align: left;
+        }
+
+        .map-header-container .section-title::after {
+            display: none;
+        }
+
+        .directions-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--gold-primary);
+            border-radius: 25px;
+            padding: 10px 22px;
+            color: var(--gold-primary);
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+        }
+
+        .directions-btn:hover {
+            background: var(--gold-primary);
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(203, 161, 53, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .map-wrapper {
+            width: 100%;
+            height: 400px;
+            border-radius: 8px;
+            border: 1px solid var(--border-gold);
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid var(--border-gold);
+            margin-top: 60px;
+            background: rgba(0,0,0,0.02);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            transition: border-color 0.4s ease;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .social-links a {
+            color: var(--gold-primary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+            border: 1px solid var(--border-gold);
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: var(--bg-card);
+        }
+
+        .social-links a:hover {
+            background: var(--gold-primary);
+            color: #ffffff;
+            border-color: var(--gold-primary);
+        }
+
+        /* RTL Specifics */
+        html[dir="rtl"] body {
+            font-family: var(--font-arabic);
+        }
+
+        html[dir="rtl"] .controls-container {
+            right: auto;
+            left: 20px;
+        }
+
+        html[dir="rtl"] .menu-card {
+            border-left: 1px solid var(--border-gold);
+            border-right: 3px solid var(--gold-primary);
+        }
+
+        html[dir="rtl"] .map-header-container .section-title {
+            text-align: right;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo-title {
+                font-size: 3.5rem;
+            }
+            .controls-container {
+                top: 10px;
+                right: 10px;
+            }
+            .map-header-container {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .map-header-container .section-title {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Controls Container -->
+    <div class="controls-container">
+        <button class="action-btn" onclick="openBooking()" id="bookingBtn">Book a Table</button>
+        <button class="action-btn" onclick="openContact()" id="contactBtn">Contact Us</button>
+        <button class="action-btn" onclick="openStampModal()" id="stampModalBtn">☕ Add Stamp</button>
+        
+        <!-- Management Dropdown Menu -->
+        <div class="dropdown" id="mgmtDropdown">
+            <button class="action-btn" onclick="toggleManagementMenu(event)" id="mgmtBtn">
+                <span>Management الإدارة</span> ▾
+            </button>
+            <div class="dropdown-menu">
+                <button class="dropdown-item" onclick="openInvoices()">
+                    <span>Invoices</span> <span>الفواتير</span>
+                </button>
+                <button class="dropdown-item" onclick="openInternal()">
+                    <span>Internal</span> <span>داخلي</span>
+                </button>
+                <button class="dropdown-item" onclick="openGeneral()">
+                    <span>General</span> <span>عام</span>
+                </button>
+            </div>
+        </div>
+
+        <button class="action-btn" onclick="toggleTheme()" id="themeBtn">
+            <span>◐</span> <span id="themeBtnText">Light Theme</span>
+        </button>
+        <button class="action-btn" onclick="toggleLanguage()" id="langBtn">العربية</button>
+    </div>
+
+    <!-- Header / Branding -->
+    <header>
+        <div class="logo-container">
+            <span class="logo-star">★</span>
+            <div class="logo-title">StarC</div>
+            <div class="logo-subtitle">Coffee</div>
+        </div>
+        
+        <!-- Header Social Links -->
+        <div class="header-socials">
+            <a href="https://www.facebook.com/profile.php?id=61594368716399" target="_blank" rel="noopener">Facebook</a>
+            <a href="https://www.instagram.com/starccafe.2026?utm_source=qr&stkn=MXV3aXA4aHQzZ2tqeA==" target="_blank" rel="noopener">Instagram</a>
+            <a href="https://www.tiktok.com/@starc.cafe?_r=1&_t=ZG-99jH4IJuaSP" target="_blank" rel="noopener">TikTok</a>
+        </div>
+
+        <p class="hero-tagline">"A journey through coffee from the cradle of civilization to the world."</p>
+        <p class="hero-tagline-ar">"رحلة عبر القهوة في مهد الحضارة إلى أنحاء العالم"</p>
+    </header>
+
+    <div class="container">
+        <h2 class="section-title">Signature Menu</h2>
+
+        <div class="menu-grid">
+            <!-- Item 1: The Velvet Espresso -->
+            <div class="menu-card">
+                <div class="product-img-container">
+                    <img class="product-img" src="data:image/jpeg;base64,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f4eI7H3+/yP9//AH4bfN37iP23f+/a3+s/9mz+I26/8P49/D/+Rvef5vO4v8n/AG75m/y9zfb5m62/ZlS34iN523eXp3+R233k9m03m4m/cR3j/2O75O/X3L/seIvxJ1Txf36zcfqfL/c3d2+/3+/veB2735u33f8Am2uS39/38b8t+Sfv+/f85/6v5v3vI/X/AOL9p9XjX524n0e35fP+f1Hj0eI+q3H+H28vR/f/AMN/c5e4X2v4f/3H5/v4v8P43i5+2v8Ac2m394vN4H9/s7m5fb3+x3/S1/P6f7/I5fE9eA3f769/6N2j35+y/I3x28d+v9E8A/sP+Y94fX8H9/I417+5j/0+ffm4+/S/x/S4d9/bX82l4fx/1vX3uL3/Xv/X7bxfp9O++6erxP39fGfl+rXy2/i9Xo1f1O+H3/i/9e+/i16m1f/E/33/2Pq3y9v8S8fL/AH1/vJ/rP41914h9O8334+O363b4P5e9/k+T88a++I3v028/M+h2e/m6f3/AO4d6vXf1v5X3/u535+/3958/wBO9f43f8vMfe+k/wAz9xH3+S5P+31792/mbeP5m4b434fxv5f7u5vN35z7eL/vL2/u+4G51f2/x6/x8X5f/efr6l/Aevf/AJU+Lq+x+yXv+/u/Jz+j433433/66/8AZ3m4+R28x+k8z35m3fvN+/X44/D++6e0m+/93t36P970z5M/x5+e5L+/ze39yv5Xq3+7/e2u6L3f+f92eNf409UeJfv38X998+8f5fyeZ9T++/w3/J9S71/853e/q69n76/f5v14m53f/eX9p9X9/w/p9vxvV9i95/8ALv4fH7jP9m43v5u53p+h0+n5G/k8f936/k1zXoT4jf96O2+P27m09m5m/wBPvfme/wDkf07R9m/p9S1E3mS8P/v7v4uP6v38a3v/AL7M3t2+eP3948u335/Ie/433u18E77/AOZf+0/t5G/4+R5e7f3uL4O9w0f4TfEfx39++G2/8s+/b+/2d5b+v7y91n/4I/vNvb4+I32vvebfy/8AN32j+/I4/T/9f8j1mD4n9N+q/H8f/X6eXf8A9T15Pj/83+3eHq3j30fxf2f4u/23m9m5vA0P0/G/081eG936v/AMN/k+p/L6O9I8e/D/8AY9q6l/f+2/08vL3/AO0y5fGvx8/C53X4f+9+P6G1942+f/eP72eT93Gz5493f/p2S8C/B7Svh4/3+/6+A4P4/v9/s/f+5l6L9n30N/2d11Gfj+3d87fP5v9v4v9I3f++5I3/b5P5n+sP8A3m9WfS1+34fR6d1/iPxfxfm/X+3j55+O4f/AJP0+q1z7Nfx7v8Aj+U/72b3aD4p3/X4m/3/AL25u/k6vD1b9O0/f3Xf1f33HzeI/it1e6/v3+R5O3m5eB2b8m3y+0e5v/mYbf5Eet/09ofQd/eXGneTv2f1O9/8v/efP8O3v+X7p5fT0L3XWzcfJ+27m7vX1e3355X++394O2x3+/4G1E9/T4S49e3v4S31/a0+N6/E8D/U/UfD+P3f+X+3X/lfwq8vS82q8p/b3v7+fTfN2k/Y9/7f8f+/v/TzeL8d8b4j+I3s/uO54P02P3sbf+459t9A8C9f3+/wDsfvvNufJ/p32m4/v98O6T8bX1P58v2+/bvf2f3+f7z97l+/d+j2u8Y9S/BvP+8x9/fX+I3+/c12+/395d3+/m++O5e40Svx94er1f47/3vXmfr/Pte12fM+D7e1f4x9f6d7n9v6X/a3qep24fwD/AAnk/Xf+Z/r972fJ2cE/qfvfI4/3391d8E/wfX2ne+/H/mff/vH1Nnf9243X9v8A9e/k5+z/APZ/v3X2jvv+I8G0v8j6d8v1u3s8fxuI9/iX1n8f+34e3s8Xf6S/E3s59fV6fBfE/e/W2O3vH+9fE/q/i6P9q5N43P43fxl3S7xevf2v5fJ4395N5f8/b32e0+9/L438v10m9/D4u+4vebfp+/i2m4v397f39423X4f3s372ff3i8dve27/e/1b4jxf9neXv33e21+/28H939f+f9z+lI3/wD9sfxO/wDg/P5e5vA3v8A8zxf+3vM/v1vP3y+8R0m3e82/v5u7u5fL5v4/q+352+f+fP66/S03S+b8/s6S+L7614eX33+p+0139/y/v97m8m/8z397xvh/xfi23+/+4m5+Xp2cM+3f+/+d++/0e8s3/Xl92S8R/F3u/I3+f8A096n5f8A1X+B+4X8v8/m+1e/cR/0+vN/5v4v7m7fXv4/8eJ/23m/p+X2n9A5d89S3+4931fufp9X9v3m128033Nfev+3/5ft6m9vV/eXv1/x9/3l/v7/vE2943u/v4/wCH2e/+A+/I+Zvf/me/xf2e7/zftc210i8vN/p32m79f+2+/m7f233/ACa3xf8A33+4/p6+P+e4f9b8O43ve1p/pfn0/S/lX73L/fP5v4/aX/a/fXk+Pxe+/v8/v7/m/r8/d/s9N5fA+/O49/P7+yXfvNv0fzeL+/I3m73fXmP9j0v0i62/s+b0/N/e/f5m9x/eJc28a2I4zn3Izk/8ARvXf1v5s+X5/2+Lp4v3vx/v134P35b/L2fO/H4uH9v8A08vU9S6/2+u318u5t23yRk+39Ppj9P8A8l596u0sLbsk37g71eI4kYgAetcf6/1e1mtXRpC/fCgY7evf/rfb2l1NfCTh8c2/b/6Xv4X36d5+119fU69O64L412P4a362S4S21Tpx7i+1fSY11i3v7iS0n4SOPd/L3b02b9+yXyN4+938f321s/eW3l9/fNveI+P722a3/AAn/AND9517/APNfxfxO8b+a5v5/3f4/p/1Xv5fU4N+POnk1T8PviP0X/wAP/vL/ACf3f9828X7xMv1b1vK/3/2m139/N4/v5Xp3f/8A22933Gv3/u5v3f6m/S8vX26+Rxf/AIG9+l8r+F8R3S+3+54fPvfO4nx+0S7m06w8U4P2x39zI819+23N3+/992++Xz/15e0Xxfkef/X53j8X61p48eL23631L9zeXf4vx92/0/e83bvv93t73X
