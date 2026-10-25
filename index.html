@@ -47,6 +47,21 @@
    	 		margin-top: 16px;
 }
 
+	/* Management login form + lock button */
+	#mgmtLogin {
+    			flex-direction: column;
+    			gap: 12px;
+    			margin-top: 16px;
+}
+
+	#mgmtLockBtn {
+    			width: 100%;
+    			margin-top: 14px;
+    			background: transparent;
+    			border: 1px solid var(--gold-primary);
+    			color: var(--gold-primary);
+}
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -437,7 +452,7 @@
             margin-top: 16px;
         }
 
-        #bookingForm label, #contactForm label, #stampForm label {
+        #bookingForm label, #contactForm label, #stampForm label, #mgmtLogin label {
             font-size: 14px;
             font-weight: 600;
             color: var(--gold-primary);
@@ -447,7 +462,8 @@
         #bookingForm select,
         #contactForm input,
         #contactForm textarea,
-        #stampForm input {
+        #stampForm input,
+        #mgmtLogin input {
             padding: 10px;
             border-radius: 4px;
             border: 1px solid var(--border-gold);
@@ -590,27 +606,19 @@
         <p class="hero-tagline-ar">"رحلة عبر القهوة في مهد الحضارة إلى أنحاء العالم"</p>
     
 
-
-
 <div class="container">
 	<h2 class="hero-tagline">Signature Menu</h2>
 	<h2 class="hero-tagline-ar">"   تصفح قائمتنا المميزة     "</h2>
+	 </div>
 </header>
-<!--- Body here start-->
+<!--- Body start here -->
 
  <!--   
 <div class="container">
 	<h2 class="section-title">Signature Menu</h2>
 	<h2 class="section-title-ar">"   تصفح قائمتنا المميزة     "</h2>
     -->
-
-    
-
-
-<!--<h2 class="hero-tagline">Signature Menu</h2>
-	<h2  class="hero-tagline-ar">"   تصفح قائمتنا المميزة     "</h2>-->
-
-
+ 
 
         <div class="menu-grid">
             <!-- Item 1: The Velvet Espresso -->
@@ -833,6 +841,7 @@
 
 <!-- Body here finish-->
 
+
     <div class="container">
         <!-- Map Section -->
         <div class="map-section">
@@ -926,12 +935,24 @@
     <div class="modal-content">
         <span class="close-btn" onclick="closeManagement()">&times;</span>
         <h3 id="managementTitle" style="color: var(--gold-primary); font-family: var(--font-heading);">Management</h3>
-        <div class="management-menu">
-            <!-- Put each link in data-link="" when you have it -->
-            <button class="submit-btn" id="invoiceBtn" data-link="/Accounting/starc-billing.html" onclick="goToLink(this)">Invoice</button>
-		<!--	<button class="submit-btn" id="invoiceBtn" data-link="Accounting\starc-billing.html" onclick="goToLink(this)">Invoice</button> -->
-            <button class="submit-btn" id="managerBtn" data-link="" onclick="goToLink(this)">Manager</button>
-            <button class="submit-btn" id="employeeBtn" data-link="" onclick="goToLink(this)">Employee</button>
+
+        <!-- Login: shown until a correct password is entered -->
+        <form id="mgmtLogin" onsubmit="handleMgmtLogin(event)" style="display:none">
+            <label for="mgmtPassword" id="mgmtPwLabel">Password</label>
+            <input type="password" id="mgmtPassword" required autocomplete="current-password">
+            <button type="submit" class="submit-btn" id="mgmtEnterBtn">Enter</button>
+        </form>
+        <div id="mgmtStatus" class="status-msg"></div>
+
+        <!-- The buttons: hidden until logged in. Manager password = all 3, Employee password = Invoice + Employee -->
+        <div id="mgmtMenu" style="display:none">
+            <div class="management-menu">
+                <!-- Put each link in data-link="" when you have it -->
+                <button class="submit-btn" id="invoiceBtn" data-link="/Accounting/starc-billing.html" onclick="goToLink(this)">Invoice</button>
+                <button class="submit-btn" id="managerBtn" data-link="" onclick="goToLink(this)">Manager</button>
+                <button class="submit-btn" id="employeeBtn" data-link="" onclick="goToLink(this)">Employee</button>
+            </div>
+            <button type="button" class="submit-btn" id="mgmtLockBtn" onclick="mgmtLogout()">Lock</button>
         </div>
     </div>
 </div>
@@ -958,6 +979,10 @@
         </div>
         <p class="copyright" id="copyrightText">&copy; 2026 StarC Coffee. All rights reserved.</p>
     </footer>
+
+    <!-- Management login (config first, then the login helper) -->
+    <script src="starc-config.js"></script>
+    <script src="starc-auth.js"></script>
 
     <script>
         // Decimal coordinates derived from: 33°29'16.6"N 36°21'09.2"E -> 33.487944, 36.352556
@@ -1027,10 +1052,10 @@
                 directionsText.textContent = 'احصل على الاتجاهات';
                 copyrightText.textContent = '\u00A9 2026 ستار سي كافيه. جميع الحقوق محفوظة';
             }
+            refreshMgmtText();
         }
 
         // Modals Control
-	function openManagement() { document.getElementById('managementModal').style.display = 'flex'; }
 	function closeManagement() { document.getElementById('managementModal').style.display = 'none'; }
 
 // Opens the link stored in data-link. Does nothing while it is empty.
@@ -1038,6 +1063,46 @@ function goToLink(btn) {
     const url = btn.dataset.link;
     if (url) window.open(url, '_blank', 'noopener');
 }
+
+// ===== Management login (the password is checked on the server; see starc-auth.js) =====
+// Manager password  -> Invoice + Manager + Employee buttons
+// Employee password -> Invoice + Employee buttons only
+const MGMT_TXT = {
+  en: { pw:'Password', enter:'Enter', lock:'Lock', wrong:'Wrong password.', locked:'Too many wrong tries. Wait 15 minutes.',
+        network:'Could not reach the server. Check the internet connection.', config:'Not set up yet.' },
+  ar: { pw:'كلمة المرور', enter:'دخول', lock:'قفل', wrong:'كلمة المرور غير صحيحة.', locked:'محاولات خاطئة كثيرة. انتظر 15 دقيقة.',
+        network:'تعذّر الاتصال بالخادم. تحقق من الإنترنت.', config:'لم يتم الإعداد بعد.' }
+};
+const mgmtT = k => MGMT_TXT[document.documentElement.getAttribute('dir') === 'rtl' ? 'ar' : 'en'][k];
+function refreshMgmtText() {
+    document.getElementById('mgmtPwLabel').textContent = mgmtT('pw');
+    document.getElementById('mgmtEnterBtn').textContent = mgmtT('enter');
+    document.getElementById('mgmtLockBtn').textContent = mgmtT('lock');
+}
+function applyRole(role) {
+    document.getElementById('mgmtLogin').style.display = role ? 'none' : 'flex';
+    document.getElementById('mgmtMenu').style.display  = role ? 'block' : 'none';
+    document.getElementById('managerBtn').style.display = role === 'manager' ? '' : 'none';
+    document.getElementById('mgmtStatus').textContent = '';
+}
+function openManagement() {
+    document.getElementById('managementModal').style.display = 'flex';
+    refreshMgmtText();
+    applyRole(window.STARC ? STARC.role() : null);
+    const pw = document.getElementById('mgmtPassword');
+    if (pw.offsetParent) pw.focus();
+}
+async function handleMgmtLogin(e) {
+    e.preventDefault();
+    const pw = document.getElementById('mgmtPassword'), st = document.getElementById('mgmtStatus');
+    st.style.color = 'var(--gold-primary)';
+    st.textContent = '';
+    if (!window.STARC) { st.textContent = 'starc-auth.js not found'; return; }
+    const res = await STARC.login(pw.value);
+    pw.value = '';
+    if (res.ok) applyRole(res.role); else st.textContent = mgmtT(res.error) || '';
+}
+function mgmtLogout() { if (window.STARC) STARC.logout(); applyRole(null); }
 
         function openBooking() { document.getElementById('bookingModal').style.display = 'flex'; }
         function closeBooking() { document.getElementById('bookingModal').style.display = 'none'; document.getElementById('bookingStatus').textContent = ''; }
@@ -1081,3 +1146,4 @@ function goToLink(btn) {
     </script>
 </body>
 </html>
+
