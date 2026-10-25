@@ -1,0 +1,23 @@
+{
+  // StarC Cafe — Worker settings. The name must match the Worker in Cloudflare exactly.
+  "name": "soft-silence-2909",
+  "main": "src/worker.js",
+  "compatibility_date": "2025-10-01",
+
+  // Your website files (this whole repository folder) are served as the site.
+  // Only addresses starting with /api/ are handled by the Worker script.
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+
+  // The records database (table created automatically on first use).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "starc-accounts",
+      "database_id": "8a3f12c2-247a-41ff-aa2f-6bca3a8911b7"
+    }
+  ]
+}

@@ -73,6 +73,11 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 dialog h3{margin:0 0 8px}
 dialog .actions{justify-content:flex-end}
 #printArea{display:none}
+.gate{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px}
+.gate form{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px;width:min(360px,100%)}
+.gate h2{margin:0 0 4px;color:var(--brand)} .gate p{margin:0 0 14px;color:var(--muted);font-size:13px}
+.gate input{margin-bottom:12px} .gate .msg{color:var(--bad);font-weight:600;margin:10px 0 0;min-height:1.2em}
+#lockBtn{background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:99px;padding:4px 12px;font:inherit;font-size:12px;cursor:pointer}
 @media print{
   body>*:not(#printArea){display:none !important}
   #printArea{display:block;color:#000;background:#fff;font-size:13px;padding:10px}
@@ -83,12 +88,41 @@ dialog .actions{justify-content:flex-end}
 </head>
 <body>
 
+<div id="gate" class="gate">
+  <form id="gateForm">
+    <h2>StarC — Staff login</h2><p>Enter your password to open the billing system.</p>
+    <input type="password" id="gatePw" placeholder="Password" autocomplete="current-password" required>
+    <button class="btn" style="width:100%">Enter</button>
+    <div class="msg" id="gateMsg"></div>
+  </form>
+</div>
+<script src="../starc-config.js"></script>
+<script src="../starc-auth.js"></script>
+<script>
+(function(){
+  var g=document.getElementById('gate'), msg=document.getElementById('gateMsg'), pw=document.getElementById('gatePw');
+  var T={wrong:'Wrong password.',locked:'Too many wrong tries. Wait 1 minute.',https:'This needs a secure (https) connection.',config:'Not set up yet: add the Web app URL in starc-config.js.',network:'Could not reach the server. Check the internet connection.'};
+  function open(r){ window.STARC_ROLE=r; g.style.display='none'; if(window.starcSetRole) window.starcSetRole(r); }
+  function lock(){ window.STARC_ROLE=null; g.style.display='flex'; if(window.starcSetRole) window.starcSetRole(null); }
+  window.starcLock=function(){ if(window.STARC) STARC.logout(); lock(); pw.focus(); };
+  if(!window.STARC){ msg.textContent='Could not load ../starc-auth.js'; return; }
+  var r=STARC.role(); if(r) open(r);
+  document.getElementById('gateForm').addEventListener('submit', async function(e){
+    e.preventDefault(); msg.textContent='';
+    var res=await STARC.login(pw.value); pw.value='';
+    if(res.ok) open(res.role); else msg.textContent=T[res.error]||'Error';
+  });
+  setInterval(function(){ if(!STARC.role() && g.style.display==='none') lock(); },15000);
+  window.addEventListener('storage', function(){ var r=STARC.role(); if(r) open(r); else lock(); });
+})();
+</script>
+
 <header>
   <div>
     <h1>StarC Specialty Coffee — Billing System</h1>
     <small>Advanced POS &amp; Invoice Generator</small>
   </div>
-  <div id="storageNote" style="cursor:pointer">Loading…</div>
+  <div style="display:flex;gap:8px;align-items:center"><div id="storageNote" style="cursor:pointer">Loading…</div><button id="lockBtn" onclick="starcLock()">Lock</button></div>
 </header>
 
 <nav id="tabs">
@@ -191,7 +225,7 @@ dialog .actions{justify-content:flex-end}
         <p class="muted">Downloads an .xlsx file with the <b>records</b> sheet (same 12 columns as your original workbook), the <b>Menu</b> sheet and an <b>Invoices</b> summary. Do this regularly — daily is ideal.</p>
         <div class="actions"><button class="btn" id="exportBtn">Download Excel backup</button></div>
       </div>
-      <div class="card">
+      <div class="card" id="restoreCard" style="display:none">
         <h2>Restore from Excel</h2>
         <p class="muted">Choose a backup made by this page (or your original workbook's <b>records</b> sheet).</p>
         <input type="file" id="importFile" accept=".xlsx,.xlsm,.xls">
@@ -199,7 +233,7 @@ dialog .actions{justify-content:flex-end}
     </div>
     <div class="card">
       <h2>Where is my data stored?</h2>
-      <p class="muted" style="margin:0">Every invoice is saved in a file on the website's server (the <b>data</b> folder next to this page), so you see the same records on any device. If the internet drops, invoices are kept on the device and sent automatically once it is back (the badge at the top shows what is waiting). The server also keeps an automatic daily copy of the records file. The Excel backup is an extra copy you can keep yourself — download it regularly.</p>
+      <p class="muted" style="margin:0" id="storeInfo">Every invoice is saved (the <b>data</b> folder next to this page), so you see the same records on any device. If the internet drops, invoices are kept on the device and sent automatically once it is back (the badge at the top shows what is waiting). The server also keeps an automatic daily copy of the records file. The Excel backup is an extra copy you can keep yourself — download it regularly.</p>
     </div>
   </section>
 </main>
@@ -399,7 +433,7 @@ function renderRecords(){
     <td>${r.id ?? "⏳"}</td><td>${esc(r.ts)}</td><td>${esc(r.inv)}</td><td>${esc(r.table)}</td><td>${esc(r.date)}</td><td>${esc(r.staff)}</td>
     <td>${esc(r.itemId)}</td><td>${esc(r.en)}</td><td class="ar" dir="rtl">${esc(r.ar)}</td>
     <td class="num">${money(r.price)}</td><td class="num">${r.qty}</td><td class="num">${money(r.total)}</td>
-    <td><button class="btn danger small r_del" data-inv="${esc(r.inv)}" title="Delete this whole invoice from records">Delete invoice</button></td></tr>`).join("")
+    <td>${userRole==="manager" ? `<button class="btn danger small r_del" data-inv="${esc(r.inv)}" title="Delete this whole invoice from records">Delete invoice</button>` : ""}</td></tr>`).join("")
     || `<tr><td colspan="13" class="muted">No records yet.</td></tr>`;
   const total = rows.reduce((s,r)=>s+r.total,0), invs = new Set(rows.map(r=>r.inv)).size;
   $("#recStats").innerHTML = `<div class="stat"><b>${invs}</b><span>Invoices (filtered)</span></div>
@@ -523,31 +557,43 @@ $("#importFile").addEventListener("change", async e=>{
   }catch(err){ console.error(err); toast(err && err.kind ? "Could not reach the website — restore not applied." : "Could not read that file."); }
 });
 
-/* ---------- sync with the website (api.php) ---------- */
-const API_URL = "api.php";
+/* ---------- sync with the website (Worker /api/sync + D1 database) ---------- */
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,10);
-let syncStat = {kind:"offline", at:null}, syncing = false, syncAgain = false, menuTimer = null;
+let userRole = window.STARC_ROLE || null, syncStat = {kind:"offline", at:null}, syncing = false, syncAgain = false, menuTimer = null;
 
 async function api(method, body, query=""){
+  const c = window.STARC_CONFIG || {}, url = (c.url && c.url.indexOf("PASTE")<0) ? c.url : "";
+  if(!url){ const er=new Error("nosrv"); er.kind="nosrv"; throw er; }
+  let payload;
+  if(method==="GET"){ const q=new URLSearchParams(query); payload={action:"pull", epoch:Number(q.get("epoch")), since:Number(q.get("since"))}; }
+  else payload = Object.assign({}, body, {action: body.op});
+  payload.token = window.STARC ? STARC.token() : null;
   let r;
-  try{ r = await fetch(API_URL+query, { method, credentials:"same-origin", cache:"no-store",
-        headers: body ? {"Content-Type":"application/json"} : {}, body: body ? JSON.stringify(body) : undefined }); }
+  try{ r = await fetch(url, {method:"POST", body:JSON.stringify(payload)}); }       // plain-text body = no CORS preflight
   catch(e){ const er=new Error("offline"); er.kind="offline"; throw er; }
-  if(r.status===401){ const er=new Error("auth"); er.kind="auth"; throw er; }
   let j=null; try{ j = await r.json(); }catch(e){}
-  if(!j || j.ok!==true){ const er=new Error("bad"); er.kind = (!j && (r.status===404||r.status===200||r.status===403)) ? "nosrv" : "server"; er.detail = j && j.error; throw er; }
+  if(!j){ const er=new Error("bad"); er.kind = (r.status===404||r.status===405||r.status===501) ? "nosrv" : "server"; er.detail="unexpected reply"; throw er; }
+  if(j.ok!==true){ const er=new Error(j.error||"bad"); er.kind = j.error==="auth" ? "auth" : "server"; er.detail=j.error; throw er; }
   return j;
 }
 function updateStatus(){
   const el=$("#storageNote"); if(!el||!state) return; const n=state.pending.length; let t;
   if(syncStat.kind==="ok") t = n ? `⏳ ${n} waiting to sync` : "● Saved on website";
   else if(!localOk) t = "⚠ Not saving — storage blocked";
-  else if(syncStat.kind==="nosrv") t = "⚠ api.php not found — saved on this device only";
-  else if(syncStat.kind==="auth") t = "⚠ Login expired — reload the page";
+  else if(syncStat.kind==="nosrv") t = "● Saved on this device only (server not set up)";
+  else if(syncStat.kind==="auth") t = "⚠ Login expired — please log in again";
   else if(syncStat.kind==="server") t = "⚠ Website storage error" + (syncStat.detail ? ": "+syncStat.detail : "");
   else t = n ? `⚠ Offline — ${n} waiting to sync` : "⚠ Offline — will sync when connected";
+  const si=$("#storeInfo"); if(si) si.innerHTML = syncStat.kind==="ok"
+    ? "Every invoice is saved in a file on the website's server in your own Cloudflare database (table <b>records</b>), so the team in every country sees the same records. If the internet drops, invoices wait on the device and are sent automatically when it is back. Use the Excel backup button on this tab to download a copy any time."
+    : "Invoices are saved in this browser, on this device only (IndexedDB). They survive closing the page and restarting the computer, but other devices cannot see them, and clearing the browser's site data would erase them. <b>Always use the same browser on the same device, and download the Excel backup every day.</b>";
   el.textContent = t; el.title = (syncStat.at ? "Last sync "+syncStat.at+". " : "") + "Click to sync now.";
 }
+function applyRoleUI(){
+  const c=$("#restoreCard"); if(c) c.style.display = userRole==="manager" ? "" : "none";
+  const mt=document.querySelector('#tabs button[data-tab="menu"]'); if(mt) mt.style.display = userRole==="manager" ? "" : "none";
+}
+window.starcSetRole = r => { userRole = r; applyRoleUI(); renderRecords(); if(r) sync(); };
 function queueAdd(rows){
   const opId = uid();
   state.pending.push({op:"add", opId, rows});
@@ -569,6 +615,8 @@ function alignCounter(){
   state.invoices.forEach(v=>{ if(used.has(v.no) && !v.items.some(it=>it.id)) v.no = takeInvoiceNo(); });
 }
 async function sync(){
+  const cfgOk = window.STARC_CONFIG && STARC_CONFIG.url && STARC_CONFIG.url.indexOf("PASTE")<0;
+  if(cfgOk && window.STARC && !STARC.token()){ updateStatus(); return; }      // not logged in yet: wait for the login
   if(syncing){ syncAgain = true; return; }
   syncing = true;
   try{
@@ -586,6 +634,7 @@ async function sync(){
       const base = (res.full ? [] : state.records.filter(r=>!r.opId)).concat(res.records);
       state.records = base.concat(pendRows);
       state.epoch = res.epoch; state.lastId = res.seq;
+      if(res.role) userRole = res.role; applyRoleUI();
       let menuChanged = false;
       if(!state.pending.some(o=>o.op==="menu")){
         if(res.menu){ if(JSON.stringify(res.menu)!==JSON.stringify(state.menu)){ state.menu=res.menu; menuChanged=true; } }
@@ -597,7 +646,7 @@ async function sync(){
       if(document.activeElement!==$("#f_no")) $("#f_no").value = inv().no;
       renderRecords(); renderBackup(); await persist();
     } while(syncAgain || state.pending.length);
-  }catch(e){ syncStat = {kind:e.kind||"offline", at:syncStat.at, detail:e.detail}; console.warn("sync:", e); }
+  }catch(e){ syncStat = {kind:e.kind||"offline", at:syncStat.at, detail:e.detail}; console.warn("sync:", e); if(e.kind==="auth" && window.starcLock && window.STARC && STARC.token()) window.starcLock(); }
   finally{ syncing = false; updateStatus(); }
 }
 
@@ -621,11 +670,11 @@ window.addEventListener("beforeunload", ()=>{ if(state) DB.set("state", JSON.par
   }
   state.backedUpSeq = state.backedUpSeq || 0;
   try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
-  renderChips(); renderMenu(); renderInvoice(); renderRecords(); renderBackup();
+  renderChips(); renderMenu(); renderInvoice(); renderRecords(); renderBackup(); applyRoleUI();
   await persist(); updateStatus();
   $("#storageNote").onclick = ()=>{ toast("Syncing…"); sync(); };
   sync();
-  setInterval(sync, 60000);
+  setInterval(()=>{ if(!document.hidden) sync(); }, 60000);
   window.addEventListener("online", sync);
   document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) sync(); });
 })();
