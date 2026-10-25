@@ -172,20 +172,21 @@ export default {
     if (url.pathname !== '/api/sync') {
       return url.pathname.startsWith('/api/') ? json({ ok: false, error: 'not found' }, 404) : env.ASSETS.fetch(request);
     }
-          if (request.method === 'GET') return json({ ok: true, service: 'starc-billing',   // quick health check
-      manager: configured(env.MANAGER_PASSWORD), employee: configured(env.EMPLOYEE_PASSWORD),
-      names: Object.keys(env).map(k => '[' + k + ']:' + typeof env[k]) });
-    
-    //*--if (request.method === 'GET') return json({ ok: true, service: 'starc-billing' });   // quick health check--*/
-    if (request.method !== 'POST') return json({ ok: false, error: 'method not allowed' }, 405);
+    if (request.method !== 'GET' && request.method !== 'POST') return json({ ok: false, error: 'method not allowed' }, 405);
     try {
+      await init(env.DB);
+      const meta = await metaAll(env.DB);
+      // Passwords: Cloudflare secrets first; if they are not set, the values stored in the database table "meta"
+      env = { ...env,
+        MANAGER_PASSWORD: env.MANAGER_PASSWORD || meta.manager_password || '',
+        EMPLOYEE_PASSWORD: env.EMPLOYEE_PASSWORD || meta.employee_password || '' };
+      if (request.method === 'GET') return json({ ok: true, service: 'starc-billing',   // quick health check
+        manager: configured(env.MANAGER_PASSWORD), employee: configured(env.EMPLOYEE_PASSWORD) });
       const text = await request.text();
       if (text.length > 3 * 1024 * 1024) return json({ ok: false, error: 'request too large' }, 413);
       let req; try { req = JSON.parse(text); } catch (e) { return json({ ok: false, error: 'invalid' }, 400); }
       const action = str(req.action, 20);
-      await init(env.DB);
       if (action === 'login') return json(await login(env, request, req));
-      const meta = await metaAll(env.DB);
       const role = await verify(env, await getSecret(env.DB, meta), req.token);
       if (!role) return json({ ok: false, error: 'auth' });
       return json(await handle(env, action, req, role, meta));
@@ -194,3 +195,4 @@ export default {
     }
   }
 };
+
