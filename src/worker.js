@@ -172,7 +172,9 @@ export default {
     if (url.pathname !== '/api/sync') {
       return url.pathname.startsWith('/api/') ? json({ ok: false, error: 'not found' }, 404) : env.ASSETS.fetch(request);
     }
-    if (request.method === 'GET') return json({ ok: true, service: 'starc-billing' });   // quick health check
+       if (request.method === 'GET') return json({ ok: true, service: 'starc-billing',   // quick health check
+      manager: configured(env.MANAGER_PASSWORD), employee: configured(env.EMPLOYEE_PASSWORD) });
+    //*--if (request.method === 'GET') return json({ ok: true, service: 'starc-billing' });   // quick health check--*/
     if (request.method !== 'POST') return json({ ok: false, error: 'method not allowed' }, 405);
     try {
       const text = await request.text();
