@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>StarC Coffee — Bill | الفاتورة</title>
+<style>
+:root{--bg:#0a0604;--card:#18100c;--gold:#cba135;--gold-l:#ebd68a;--text:#fdfaf7;--muted:#b8a295;--line:rgba(203,161,53,.35)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Tahoma,Arial,sans-serif;line-height:1.5;padding:18px 14px 40px}
+.wrap{max-width:460px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 18px;box-shadow:0 10px 24px rgba(0,0,0,.45)}
+.head{text-align:center;margin-bottom:16px}
+.star{color:var(--gold);font-size:26px;display:block;line-height:1}
+.brand{font-family:Georgia,"Times New Roman",serif;font-size:28px;color:var(--gold);letter-spacing:.5px}
+.brand-ar{color:var(--gold-l);font-size:15px;margin-top:2px}
+.info{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0;margin-bottom:14px;text-align:center}
+.info small{display:block;color:var(--muted);font-size:11px}
+.info b{font-size:14px;word-break:break-word}
+.item{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.item .nm{flex:1;min-width:0}
+.item .en{font-weight:600;word-break:break-word}
+.item .ar{color:var(--gold-l);font-size:14px;direction:rtl;text-align:start;word-break:break-word}
+.item .calc{color:var(--muted);font-size:12px;margin-top:2px;direction:ltr}
+.item .tot{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sum{margin-top:14px}
+.sum div{display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:var(--muted)}
+.sum div span:last-child{font-variant-numeric:tabular-nums;color:var(--text)}
+.sum .grand{border-top:2px solid var(--gold);margin-top:8px;padding-top:10px;font-size:20px;font-weight:700;color:var(--gold)}
+.sum .grand span:last-child{color:var(--gold)}
+.thanks{text-align:center;margin-top:20px;color:var(--gold-l)}
+.thanks small{display:block;color:var(--muted);margin-top:4px}
+.btn{display:block;width:100%;margin-top:18px;padding:11px;border-radius:9px;border:1px solid var(--gold);background:transparent;color:var(--gold);font:inherit;font-weight:600;cursor:pointer}
+.err{text-align:center;padding:28px 10px}
+.err h2{color:var(--gold);margin-bottom:8px}
+@media print{
+  body{background:#fff;color:#000;padding:0}
+  .card{background:#fff;border:0;box-shadow:none;color:#000}
+  .brand,.sum .grand,.sum .grand span:last-child,.star{color:#000}
+  .item .ar,.brand-ar,.thanks{color:#333}.item .calc,.info small,.sum div,.thanks small{color:#555}.sum div span:last-child{color:#000}
+  .btn{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="bill" hidden>
+    <div class="head">
+      <span class="star">★</span>
+      <div class="brand">StarC Coffee</div>
+      <div class="brand-ar">ستار سي كافيه</div>
+    </div>
+    <div class="info">
+      <div><small>Invoice · الفاتورة</small><b id="f_n"></b></div>
+      <div><small>Date · التاريخ</small><b id="f_d"></b></div>
+      <div><small>Table · الطاولة</small><b id="f_t"></b></div>
+    </div>
+    <div id="items"></div>
+    <div class="sum" id="sum"></div>
+    <div class="thanks">Thank you for visiting us<br><span dir="rtl">شكراً لزيارتكم</span>
+      <small>Digital copy of your bill · نسخة رقمية من فاتورتك</small></div>
+    <button class="btn" onclick="window.print()">Print / Save as PDF · طباعة / حفظ PDF</button>
+  </div>
+
+  <div class="card err" id="err" hidden>
+    <h2>This bill link is not valid</h2>
+    <p>Please scan the QR code again, or ask the staff.</p>
+    <p dir="rtl" style="margin-top:8px">رابط الفاتورة غير صالح. يرجى مسح الرمز مرة أخرى أو سؤال الموظف.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var money = function (n) { return (Number(n) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var txt = function (v, n) { return String(v == null ? "" : v).slice(0, n); };
+  var el = function (tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  function decode(s) {
+    s = s.replace(/-/g, "+").replace(/_/g, "/");
+    while (s.length % 4) s += "=";
+    var bin = atob(s), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return JSON.parse(new TextDecoder("utf-8").decode(bytes));
+  }
+  function fail() { document.getElementById("err").hidden = false; }
+
+  function render() {
+    document.getElementById("err").hidden = true;
+    document.getElementById("bill").hidden = true;
+    document.getElementById("items").textContent = "";
+    document.getElementById("sum").textContent = "";
+
+    var b;
+    try { b = decode(location.hash.slice(1)); } catch (e) { return fail(); }
+    if (!b || b.v !== 1 || !Array.isArray(b.i) || b.i.length < 1 || b.i.length > 300) return fail();
+
+    var items = [];
+    for (var k = 0; k < b.i.length; k++) {
+      var r = b.i[k]; if (!Array.isArray(r)) return fail();
+      var price = Number(r[2]), qty = Number(r[3]);
+      if (!isFinite(price) || !isFinite(qty) || price < 0 || qty <= 0) return fail();
+      items.push({ en: txt(r[0], 120), ar: txt(r[1], 120), price: price, qty: qty });
+    }
+
+    document.getElementById("f_n").textContent = txt(b.n, 40);
+    document.getElementById("f_d").textContent = txt(b.d, 10);
+    document.getElementById("f_t").textContent = txt(b.t, 40);
+
+    var box = document.getElementById("items"), sub = 0;
+    items.forEach(function (it) {
+      var total = it.price * it.qty; sub += total;
+      var row = el("div", "item"), nm = el("div", "nm");
+      if (it.en) nm.appendChild(el("div", "en", it.en));
+      if (it.ar) { var a = el("div", "ar", it.ar); a.setAttribute("dir", "rtl"); nm.appendChild(a); }
+      nm.appendChild(el("div", "calc", it.qty + " \u00d7 " + money(it.price)));
+      row.appendChild(nm); row.appendChild(el("div", "tot", money(total)));
+      box.appendChild(row);
+    });
+
+    var pct = Number(b.p) || 0, tax = sub * pct / 100, sum = document.getElementById("sum");
+    function line(cls, label, value) { var d = el("div", cls); d.appendChild(el("span", null, label)); d.appendChild(el("span", null, value)); sum.appendChild(d); }
+    line("", "Subtotal \u00b7 \u0627\u0644\u0645\u062c\u0645\u0648\u0639", money(sub));
+    if (pct > 0) line("", "Service / Tax \u00b7 \u0627\u0644\u062e\u062f\u0645\u0629 \u0648\u0627\u0644\u0636\u0631\u064a\u0628\u0629 (" + pct + "%)", money(tax));
+    line("grand", "Total \u00b7 \u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a", money(sub + tax));
+
+    document.getElementById("bill").hidden = false;
+  }
+  window.addEventListener("hashchange", render);
+  render();
+})();
+</script>
+</body>
+</html>
