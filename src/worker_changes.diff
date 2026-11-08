@@ -1,0 +1,96 @@
+--- worker.orig.js	2026-11-08 13:56:12.148144409 +0000
++++ worker.js	2026-11-08 13:56:12.172359841 +0000
+@@ -3,10 +3,13 @@
+  * Receives invoices from the billing page, stores them in the D1 table "records",
+  * and checks the manager / employee passwords on the server.
+  *
++ * Also stores discount coupons (D1 table "coupons", actions coupon_create / coupon_list / coupon_get / coupon_redeem).
++ *
+  * Secrets to set in Cloudflare (Worker > Settings > Variables and secrets):
+  *   MANAGER_PASSWORD   EMPLOYEE_PASSWORD
+  */
+ const TOKEN_HOURS = 12;
++const COUPON_TZ = 'UTC';   // <- your cafe time zone, e.g. 'Asia/Beirut'. A coupon is valid through the end of its last day in this zone.
+ const enc = new TextEncoder();
+ 
+ /* ---------- small helpers ---------- */
+@@ -42,7 +45,11 @@
+     db.prepare(`CREATE TABLE IF NOT EXISTS acct_entries (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, section TEXT, category TEXT, grp TEXT, name TEXT,
+       amount REAL, note TEXT, sort INTEGER, updated INTEGER)`),
+-    db.prepare('CREATE TABLE IF NOT EXISTS acct_audit (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, action TEXT, detail TEXT)')
++    db.prepare('CREATE TABLE IF NOT EXISTS acct_audit (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, action TEXT, detail TEXT)'),
++    db.prepare(`CREATE TABLE IF NOT EXISTS coupons (
++      code TEXT PRIMARY KEY, percent INTEGER NOT NULL, holder TEXT NOT NULL, valid_until TEXT NOT NULL,
++      created_at TEXT NOT NULL, created_by TEXT, used_at TEXT, used_by TEXT)`),
++    db.prepare('CREATE INDEX IF NOT EXISTS idx_coupons_created ON coupons (created_at)')
+   ]);
+   ready = true;
+ }
+@@ -248,6 +255,58 @@
+   return { ok: false, error: 'unknown action' };
+ }
+ 
++/* ---------- discount coupons ---------- */
++// create / list: manager only.  get / redeem: manager or employee.  Redeem is one atomic statement,
++// so a coupon can never be used twice, and an expired coupon can never be redeemed.
++const COUPON_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
++const couponToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: COUPON_TZ }).format(new Date());   // YYYY-MM-DD
++const couponCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
++const couponView = r => ({
++  code: r.code, percent: r.percent, holder: r.holder, validUntil: r.valid_until, createdAt: r.created_at,
++  usedAt: r.used_at || '', usedBy: r.used_by || '',
++  status: r.used_at ? 'used' : (couponToday() > r.valid_until ? 'expired' : 'valid')
++});
++async function coupons(env, action, req, role) {
++  const db = env.DB;
++  if (action === 'coupon_create') {
++    if (role !== 'manager') return { ok: false, error: 'manager only' };
++    const percent = Math.round(num(req.percent)), holder = str(req.holder, 60).trim(), validUntil = str(req.validUntil, 10);
++    if (!(percent >= 1 && percent <= 100) || !holder || !/^\d{4}-\d{2}-\d{2}$/.test(validUntil) || validUntil < couponToday())
++      return { ok: false, error: 'invalid' };
++    for (let i = 0; i < 5; i++) {
++      const code = Array.from(crypto.getRandomValues(new Uint8Array(10)), x => COUPON_ALPHABET[x % COUPON_ALPHABET.length]).join('');
++      const created = new Date().toISOString();
++      try {
++        await db.prepare('INSERT INTO coupons (code, percent, holder, valid_until, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?)')
++          .bind(code, percent, holder, validUntil, created, role).run();
++        return { ok: true, coupon: couponView({ code, percent, holder, valid_until: validUntil, created_at: created }) };
++      } catch (e) { /* the code already exists: try another one */ }
++    }
++    return { ok: false, error: 'could not create' };
++  }
++  if (action === 'coupon_list') {
++    if (role !== 'manager') return { ok: false, error: 'manager only' };
++    const { results } = await db.prepare('SELECT * FROM coupons ORDER BY created_at DESC LIMIT 200').all();
++    return { ok: true, coupons: results.map(couponView) };
++  }
++  const code = couponCode(req.code);
++  if (!code) return { ok: false, error: 'not found' };
++  const row = () => db.prepare('SELECT * FROM coupons WHERE code = ?').bind(code).first();
++  if (action === 'coupon_get') {
++    const r = await row();
++    return r ? { ok: true, coupon: couponView(r) } : { ok: false, error: 'not found' };
++  }
++  if (action === 'coupon_redeem') {
++    const res = await db.prepare('UPDATE coupons SET used_at = ?, used_by = ? WHERE code = ? AND used_at IS NULL AND valid_until >= ?')
++      .bind(new Date().toISOString(), role, code, couponToday()).run();
++    const r = await row();
++    if (!r) return { ok: false, error: 'not found' };
++    if (res.meta && res.meta.changes >= 1) return { ok: true, coupon: couponView(r) };
++    return { ok: false, error: couponView(r).status, coupon: couponView(r) };      // 'used' or 'expired'
++  }
++  return { ok: false, error: 'unknown action' };
++}
++
+ /* ---------- entry point ---------- */
+ export default {
+   async fetch(request, env) {
+@@ -276,6 +335,7 @@
+         if (role !== 'manager') return json({ ok: false, error: 'manager only' });
+         return json(await acct(env, action, req));
+       }
++      if (action.startsWith('coupon_')) return json(await coupons(env, action, req, role));   // discount coupons
+       return json(await handle(env, action, req, role, meta));
+     } catch (err) {
+       return json({ ok: false, error: 'server: ' + String(err && err.message || err) }, 500);
