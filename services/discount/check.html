@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>StarC — Check coupon | فحص القسيمة</title><link rel="stylesheet" href="/services/services.css"></head><body>
+<header><div><h1>Check coupon · فحص القسيمة</h1><small>StarC Cafe</small></div><div class="hbtns"><button class="hbtn" onclick="gateLock()">Lock · قفل</button></div></header>
+<main><div class="card">
+  <input id="c" class="code" placeholder="Enter code or scan QR · أدخل الكود أو امسح QR" autocapitalize="characters" autocomplete="off">
+  <div class="chips"><button class="btn" id="go">Check · تحقق</button><button class="btn ghost" id="cam">📷 Scan · مسح</button></div>
+  <video id="vid" class="hide" playsinline muted></video><div id="res"></div>
+</div></main>
+<script src="/starc-config.js"></script><script src="/starc-auth.js"></script><script src="/services/gate.js"></script>
+<script src="lib/jsQR.js"></script><script src="discount.js"></script>
+<script>
+var $=function(s){return document.querySelector(s)},stream=null;
+function codeOf(s){var m=String(s).match(/[?&]c=([A-Za-z0-9]+)/);return (m?m[1]:String(s)).toUpperCase().replace(/[^A-Z0-9]/g,"")}
+function render(c,note){
+  var h=(note?'<p class="note" style="color:var(--ok);font-weight:700">'+note+'</p>':'')+'<div class="st '+c.status+'">'+DC.status[c.status]+'</div>'+
+  '<div class="row"><span>Discount · الخصم</span><b>'+c.percent+'%</b></div>'+
+  '<div class="row"><span>Holder · الحامل</span><b>'+DC.esc(c.holder)+'</b></div>'+
+  '<div class="row"><span>Valid until · صالحة حتى</span><b>'+DC.esc(c.validUntil)+'</b></div>';
+  if(c.status==="used")h+='<div class="row"><span>Used on · تاريخ الاستخدام</span><b>'+new Date(c.usedAt).toLocaleString()+'</b></div>';
+  if(c.status==="valid")h+='<button class="btn" id="rd" style="width:100%;margin-top:12px">Mark as used · تسجيل الاستخدام</button>';
+  $("#res").innerHTML=h;var b=$("#rd");
+  if(b)b.onclick=async function(){b.disabled=true;
+    try{var r=await DC.api({action:"coupon_redeem",code:c.code});render(r.coupon,"Recorded as used ✔ · تم تسجيل الاستخدام")}
+    catch(e){if(e.coupon)render(e.coupon);else{$("#res").innerHTML='<div class="st expired">'+DC.errText(e)+'</div>';if(e.kind==="auth")gateLock()}}};
+}
+async function check(raw){var code=codeOf(raw);if(!code)return;$("#res").textContent="…";
+  try{var r=await DC.api({action:"coupon_get",code:code});render(r.coupon)}
+  catch(e){$("#res").innerHTML='<div class="st expired">'+DC.errText(e)+'</div>';if(e.kind==="auth")gateLock()}}
+function stopCam(){if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}$("#vid").classList.add("hide")}
+$("#cam").onclick=function(){stopCam();
+  navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(function(s){
+    stream=s;var v=$("#vid");v.srcObject=s;v.classList.remove("hide");v.play();
+    var cv=document.createElement("canvas"),x=cv.getContext("2d",{willReadFrequently:true});
+    (function tick(){if(!stream)return;if(v.readyState>=2){cv.width=v.videoWidth;cv.height=v.videoHeight;x.drawImage(v,0,0);
+      var r=jsQR(x.getImageData(0,0,cv.width,cv.height).data,cv.width,cv.height);
+      if(r&&r.data){stopCam();$("#c").value=codeOf(r.data);check(r.data);return}}requestAnimationFrame(tick)})();
+  }).catch(function(){$("#res").innerHTML='<p class="note">Camera unavailable, enter the code. · تعذر فتح الكاميرا</p>'})};
+$("#go").onclick=function(){check($("#c").value)};$("#c").onkeydown=function(e){if(e.key==="Enter")check($("#c").value)};
+StarcGate('any',function(){var q=new URLSearchParams(location.search).get("c");if(q){$("#c").value=codeOf(q);check(q)}});
+</script></body></html>
