@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>StarC — Accounting | الحسابات</title>
+<style>
+:root{
+  --bg:#faf6f1; --card:#fff; --ink:#2b211b; --muted:#7a6a5f; --line:#e6dccf;
+  --brand:#6f4e37; --brand-d:#553a28; --gold:#c8a165; --ok:#2e7d4f; --bad:#b3372c; --soft:#f4ece3;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+header{background:var(--brand);color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:20px} header small{display:block;opacity:.85;font-size:12px}
+.hbtns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hbtn{background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:99px;padding:5px 14px;font:inherit;font-size:13px;cursor:pointer;text-decoration:none}
+.hbtn:hover{background:rgba(255,255,255,.28)}
+nav{display:flex;gap:4px;padding:10px 20px 0;border-bottom:1px solid var(--line);background:#fff;flex-wrap:wrap}
+nav button{border:0;background:none;padding:10px 14px;font:inherit;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent}
+nav button.on{color:var(--brand);border-color:var(--brand)}
+main{max-width:1100px;margin:0 auto;padding:18px 20px 60px}
+.tab{display:none}.tab.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.card h2{margin:0 0 4px;font-size:17px} .sub{color:var(--muted);font-size:13px;margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media(max-width:860px){.grid2{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:start;vertical-align:middle}
+th{font-size:12px;color:#fff;background:#1f4e78;font-weight:600}
+td.num,th.num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.total td{background:#d9e1f2;font-weight:700}
+tr.main{cursor:pointer} tr.main:hover td{background:#faf6f1} tr.main td:first-child::before{content:"▸ ";color:var(--muted)} tr.main.open td:first-child::before{content:"▾ "}
+tr.line td{background:#fcfaf7;color:var(--muted);font-size:13px} tr.line td:first-child{padding-inline-start:28px}
+.ar{display:block;font-size:12px;color:var(--muted)} .en{display:block;font-size:12px;color:var(--muted)}
+.pill{display:inline-block;border-radius:99px;padding:5px 16px;font-weight:700;color:#fff}
+.pill.ok{background:var(--ok)} .pill.bad{background:var(--bad)}
+.btn{font:inherit;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid var(--brand);background:var(--brand);color:#fff;cursor:pointer}
+.btn:hover{background:var(--brand-d)} .btn.ghost{background:#fff;color:var(--brand)} .btn.ghost:hover{background:var(--soft)}
+.btn.danger{background:#fff;color:var(--bad);border-color:var(--bad)} .btn.small{padding:3px 10px;font-size:13px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px;font-weight:600}
+input,select,textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%}
+input:focus,select:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:#fbf8f4;border:1px solid var(--line);border-radius:10px;padding:10px 14px}.stat b{display:block;font-size:19px;color:var(--brand)}.stat span{font-size:12px;color:var(--muted)}
+.banner{background:#fff4d6;border:1px solid #ecd58a;border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.muted{color:var(--muted);font-size:13px}
+.tw{overflow-x:auto}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:200;max-width:90vw}#toast.show{opacity:1}
+dialog{border:1px solid var(--line);border-radius:14px;padding:20px;max-width:520px;width:94vw}dialog::backdrop{background:rgba(0,0,0,.35)}
+dialog h3{margin:0 0 12px}.frm{display:grid;grid-template-columns:1fr 1fr;gap:12px}.frm .full{grid-column:1/-1}
+.dact{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.gate{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px}
+.gate form{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px;width:min(380px,100%)}
+.gate h2{margin:0 0 4px;color:var(--brand)}.gate p{margin:0 0 14px;color:var(--muted);font-size:13px}.gate input{margin-bottom:12px}.gate .msg{color:var(--bad);font-weight:600;margin:10px 0 0;min-height:1.2em}
+@media print{ header,nav,.noprint,#toast{display:none!important} body{background:#fff} .card{border:0;padding:0} .tab{display:none!important}.tab.on{display:block!important} th{background:#1f4e78!important;-webkit-print-color-adjust:exact;print-color-adjust:exact} }
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <form id="gateForm">
+    <h2>Accounting · الحسابات</h2>
+    <p>Manager access only. · للمدير فقط.</p>
+    <input type="password" id="gatePw" placeholder="Manager password" autocomplete="current-password" required>
+    <button class="btn" style="width:100%">Enter</button>
+    <div class="msg" id="gateMsg"></div>
+  </form>
+</div>
+<script src="/starc-config.js"></script>
+<script src="/starc-auth.js"></script>
+<script>
+(function(){
+  var g=document.getElementById('gate'), msg=document.getElementById('gateMsg'), pw=document.getElementById('gatePw');
+  var T={wrong:'Wrong password.',locked:'Too many wrong tries. Wait 15 minutes.',network:'Could not reach the server. Check the internet connection.',config:'Not set up yet (starc-config.js).',employee:'This page is for the manager only.'};
+  function open(){ window.ACCT_OK=true; g.style.display='none'; if(window.acctStart) window.acctStart(); }
+  function lock(m){ window.ACCT_OK=false; g.style.display='flex'; msg.textContent=m||''; }
+  window.acctLock=function(){ if(window.STARC) STARC.logout(); lock(''); pw.focus(); };
+  if(!window.STARC){ msg.textContent='Could not load /starc-auth.js'; return; }
+  var r=STARC.role(); if(r==='manager') open(); else if(r){ STARC.logout(); lock(T.employee); }
+  document.getElementById('gateForm').addEventListener('submit', async function(e){
+    e.preventDefault(); msg.textContent='';
+    var res=await STARC.login(pw.value); pw.value='';
+    if(!res.ok){ msg.textContent=T[res.error]||'Error'; return; }
+    if(res.role==='manager') open(); else { STARC.logout(); msg.textContent=T.employee; }
+  });
+  setInterval(function(){ if(window.ACCT_OK && STARC.role()!=='manager') lock('Session ended. Please log in again.'); },15000);
+  window.addEventListener('storage', function(){ if(STARC.role()==='manager') { if(!window.ACCT_OK) open(); } else if(window.ACCT_OK) lock(''); });
+})();
+</script>
+
+<header>
+  <div><h1>Accounting · الحسابات</h1><small>Opening balance sheet · الميزانية العمومية الافتتاحية — amounts in US dollars</small></div>
+  <div class="hbtns"><span class="muted" id="status" style="color:#fff;opacity:.85"></span><a class="hbtn" href="index.html">Manager menu · القائمة</a><a class="hbtn" href="/">Back to site</a><button class="hbtn" onclick="acctLock()">Lock</button></div>
+</header>
+<nav id="tabs">
+  <button data-tab="balance" class="on">Balance sheet · الميزانية</button>
+  <button data-tab="summary">Cost summary · الملخص</button>
+  <button data-tab="details">Details · التفاصيل</button>
+  <button data-tab="entries">Entries · القيود</button>
+  <button data-tab="history">History · السجل</button>
+  <button data-tab="backup">Excel · نسخة احتياطية</button>
+</nav>
+
+<main>
+  <div id="seedBanner"></div>
+
+  <section id="tab-balance" class="tab on">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:start">
+        <div><h2>الميزانية العمومية الافتتاحية للكافيه</h2><p class="sub">Opening balance sheet · (أصول = خصوم + رأس المال) · Click a row to see its lines.</p></div>
+        <button class="btn ghost small noprint" onclick="window.print()">Print / PDF</button>
+      </div>
+      <div class="grid2">
+        <div class="tw"><table id="tAssets"></table></div>
+        <div class="tw"><table id="tLiab"></table></div>
+      </div>
+      <p style="margin:16px 0 0">التحقق من توازن الميزانية · Balance check: <span id="balPill"></span> <span class="muted" id="balDiff"></span></p>
+    </div>
+  </section>
+
+  <section id="tab-summary" class="tab">
+    <div class="card"><h2>الملخص النهائي</h2><p class="sub">Final summary — all costs by category (assets side).</p>
+      <div class="tw"><table id="tSummary"></table></div></div>
+  </section>
+
+  <section id="tab-details" class="tab">
+    <div class="card">
+      <div class="filters" style="grid-template-columns:minmax(200px,300px)"><div><label>View by · عرض حسب</label>
+        <select id="dMode"><option value="section">Section · القسم</option><option value="category">Cost category · فئة التكلفة</option></select></div></div>
+      <div id="dBody"></div>
+    </div>
+  </section>
+
+  <section id="tab-entries" class="tab">
+    <div class="card">
+      <div class="filters">
+        <div><label>Section · القسم</label><select id="fSec"></select></div>
+        <div><label>Cost category · الفئة</label><select id="fCat"></select></div>
+        <div><label>Search · بحث</label><input id="fQ" placeholder="name or note"></div>
+        <div style="display:flex;align-items:end"><button class="btn" id="addEntry">+ Add entry</button></div>
+      </div>
+      <div class="tw"><table id="tEntries"></table></div>
+    </div>
+  </section>
+
+  <section id="tab-history" class="tab">
+    <div class="card"><h2>History · السجل</h2><p class="sub">Every change made on this page (latest 200).</p><div class="tw"><table id="tHistory"></table></div></div>
+  </section>
+
+  <section id="tab-backup" class="tab">
+    <div class="grid2">
+      <div class="card"><h2>Download Excel</h2>
+        <p class="sub">Creates a workbook with the same 10 sheets as your original file (live totals and links), plus an <b>Entries</b> sheet used for restoring.</p>
+        <button class="btn" id="exportBtn">Download Excel</button></div>
+      <div class="card"><h2>Restore from Excel</h2>
+        <p class="sub">Choose a file downloaded from this page. <b>This replaces all current entries</b> (the server keeps a history).</p>
+        <input type="file" id="importFile" accept=".xlsx,.xls"></div>
+    </div>
+  </section>
+</main>
+
+<dialog id="entryDlg">
+  <h3 id="entryTitle">Entry</h3>
+  <form id="entryForm" method="dialog">
+    <div class="frm">
+      <div><label>Section · القسم</label><select id="eSec"></select></div>
+      <div><label>Cost category · الفئة</label><select id="eCat"></select></div>
+      <div class="full"><label>Name · البند</label><input id="eName" maxlength="200" dir="auto" required></div>
+      <div class="full"><label>Line it belongs to (optional) · السطر في الميزانية</label><input id="eGrp" maxlength="200" dir="auto" list="grpList" placeholder="leave empty to use the name"><datalist id="grpList"></datalist></div>
+      <div><label>Amount (USD) · المبلغ</label><input id="eAmt" type="number" min="0" step="any" required></div>
+      <div><label>Note · ملاحظة</label><input id="eNote" maxlength="300" dir="auto"></div>
+    </div>
+    <div class="dact"><button type="button" class="btn ghost" id="eCancel">Cancel</button><button type="submit" class="btn" id="eSave">Save</button></div>
+  </form>
+</dialog>
+<dialog id="dlg"><h3 id="dlgTitle"></h3><div id="dlgBody"></div><div class="dact" id="dlgBtns"></div></dialog>
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+"use strict";
+/* ============ constants ============ */
+const SECTIONS = {
+  fixed:       { ar:"الأصول الثابتة",              en:"Fixed assets",              side:"A", xl:"الأصول الثابتة",       title:"2. الأصول الثابتة (Fixed Assets)",                                bal:"أولاً: الأصول الثابتة" },
+  current:     { ar:"الأصول المتداولة",            en:"Current assets",            side:"A", xl:"الأصول المتداولة",     title:"3. الأصول المتداولة (Current Assets)",                            bal:"ثانياً: الأصول المتداولة" },
+  deferred:    { ar:"مصاريف التأسيس (مؤجلة)",       en:"Deferred start-up expenses",side:"A", xl:"مصاريف التأسيس",       title:"4. مصاريف التأسيس المؤجلة (Deferred Start-up Expenses)",          bal:"ثالثاً: مصاريف التأسيس (مؤجلة)" },
+  liabilities: { ar:"الخصوم (الدائنون)",            en:"Liabilities (creditors)",   side:"L", xl:"الخصوم (الدائنون)",    title:"5. الخصوم والدائنون (Liabilities)",                               bal:"أولاً: الخصوم (الدائنون)" },
+  equity:      { ar:"حقوق الملكية (رأس المال)",     en:"Equity (capital)",          side:"L", xl:"حقوق الملكية",         title:"6. حقوق الملكية (Equity)",                                        bal:"ثانياً: حقوق الملكية (رأس المال)" }
+};
+const SEC_ORDER = ["fixed","current","deferred","liabilities","equity"];
+const CATS = {
+  rent_contracts:     { ar:"الإيجار والعقود والتراخيص",       en:"Rent, contracts & licences" },
+  decor:              { ar:"الديكور والإصلاحات والصيانة",     en:"Decor, repairs & maintenance" },
+  furniture:          { ar:"الأثاث والمفروشات",               en:"Furniture" },
+  sanitary:           { ar:"التجهيزات الصحية والمياه",        en:"Sanitary & water" },
+  equipment:          { ar:"الأجهزة والمعدات",                en:"Equipment & devices" },
+  supplies_marketing: { ar:"المستلزمات والزينة والإعلان",     en:"Supplies, decoration & advertising" },
+  operating:          { ar:"مصاريف تشغيلية فترة التجهيز",     en:"Operating expenses (set-up period)" },
+  other:              { ar:"أخرى (نقدية وغيرها)",              en:"Other (cash, liabilities, equity)" }
+};
+const CAT_ORDER = ["rent_contracts","decor","furniture","sanitary","equipment","supplies_marketing","operating","other"];
+const CAT_SHEETS = { equipment:{ xl:"الأجهزة والمعدات", title:"7. الأجهزة والمعدات (Equipment & Devices)", total:"المجموع" },
+                     supplies_marketing:{ xl:"المستلزمات والزينة", title:"8. المستلزمات والزينة والإعلان (Supplies & Marketing)", total:"المجموع" },
+                     operating:{ xl:"المصاريف التشغيلية", title:"9. مصاريف تشغيلية خلال فترة التجهيز (Operating Expenses)", total:"المجموع" } };
+
+/* Opening balance sheet from the Excel workbook (23 entries, total assets 27,727) */
+const SEED = [
+ ["fixed","decor","ديكور وتجهيزات المحل (ديكور + كهرباء + سور)","",12050,10],
+ ["fixed","furniture","أثاث ومفروشات (كراسي + طاولات + كراسي بار + طقم شامي + نقل)","",4070,20],
+ ["fixed","sanitary","تجهيزات صحية ومياه (خزان + ميتور + مجلى + تكاسي + باب حمام + تركيبات مغسلة + فلتر)","",1140,30],
+ ["fixed","equipment","مكيف","أجهزة ومعدات (مكيف + براد + بروجكتور + صوت)",150,41],
+ ["fixed","equipment","براد","أجهزة ومعدات (مكيف + براد + بروجكتور + صوت)",180,42],
+ ["fixed","equipment","بروجكتور ضوء","أجهزة ومعدات (مكيف + براد + بروجكتور + صوت)",300,43],
+ ["fixed","equipment","مجموعة صوت للكافيه","أجهزة ومعدات (مكيف + براد + بروجكتور + صوت)",250,44],
+ ["fixed","supplies_marketing","زينة (صور شامية + نحاسيات + مرايا)","زينة وأشجار وزرعات",121,60],
+ ["fixed","supplies_marketing","أشجار وزرعات","زينة وأشجار وزرعات",123,80],
+ ["fixed","supplies_marketing","نقل الأشجار والزرعات","زينة وأشجار وزرعات",15,81],
+ ["current","rent_contracts","إيجار مدفوع مقدماً (6 أشهر)","",6650,46],
+ ["current","supplies_marketing","كاسات وفناجين + قائمة مشروبات","مخزون مستلزمات (كاسات وفناجين)",320,50],
+ ["current","other","نقدية","",0,130],
+ ["deferred","rent_contracts","مصاريف عقود وتراخيص ورسوم (عقد + معقب + بلدية + ترخيص)","",705,47],
+ ["deferred","supplies_marketing","الإعلان (لوحة + فيسبوك + ملصقات)","إعلان وترويج",265,70],
+ ["deferred","operating","رواتب خلال فترة التجهيز","رواتب فترة التجهيز",1350,90],
+ ["deferred","operating","فواتير كهرباء فترة التجهيز","",38,91],
+ ["liabilities","other","دائنو ديكور","",500,200],
+ ["liabilities","other","دائنو كاسات وفناجين","",50,201],
+ ["liabilities","other","دائنو ملصقات إعلانية","",50,202],
+ ["liabilities","other","دائنو نقل زرعات","",15,203],
+ ["liabilities","other","رواتب مستحقة (غير مدفوعة)","",300,204],
+ ["equity","other","رأس المال","",26812,300]
+].map(r=>({section:r[0],category:r[1],name:r[2],grp:r[3],amount:r[4],note:"",sort:r[5]}));
+
+/* ============ helpers ============ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const cents = n => Math.round((Number(n)||0)*100);
+const fmt = n => "$" + (Number(n)||0).toLocaleString("en-US", {minimumFractionDigits:0, maximumFractionDigits:2});
+const sum = a => a.reduce((s,e)=>s+(Number(e.amount)||0),0);
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+const bi = (o) => `${esc(o.ar)}<span class="en">${esc(o.en)}</span>`;
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),3500); }
+function ask(title, body, buttons){ return new Promise(res=>{ $("#dlgTitle").textContent=title; $("#dlgBody").innerHTML=body;
+  const box=$("#dlgBtns"); box.innerHTML=""; buttons.forEach(b=>{ const el=document.createElement("button"); el.className="btn "+(b.cls||"ghost"); el.textContent=b.label; el.onclick=()=>{ $("#dlg").close(); res(b.value); }; box.appendChild(el); });
+  const d=$("#dlg"); d.oncancel=()=>res(null); d.showModal(); }); }
+
+/* ============ server ============ */
+async function api(payload){
+  const c = window.STARC_CONFIG || {}, url = (c.url && c.url.indexOf("PASTE")<0) ? c.url : "";
+  if(!url){ const e=new Error("config"); e.kind="config"; throw e; }
+  let r;
+  try{ r = await fetch(url, {method:"POST", body:JSON.stringify(Object.assign({}, payload, {token: window.STARC ? STARC.token() : null}))}); }
+  catch(e){ const er=new Error("offline"); er.kind="offline"; throw er; }
+  let j=null; try{ j = await r.json(); }catch(e){}
+  if(!j){ const er=new Error("bad"); er.kind="server"; er.detail="unexpected reply"; throw er; }
+  if(j.ok!==true){ const er=new Error(j.error||"bad"); er.kind = j.error==="auth" ? "auth" : "server"; er.detail=j.error; throw er; }
+  return j;
+}
+function fail(e, what){
+  if(e.kind==="auth"){ toast("Session ended — please log in again."); if(window.acctLock) acctLock(); }
+  else if(e.kind==="offline") toast("No connection — nothing was changed. Try again when online.");
+  else if(e.detail==="manager only"){ toast("This page is for the manager only."); if(window.acctLock) acctLock(); }
+  else toast("Could not "+what+(e.detail ? " ("+e.detail+")" : "")+".");
+}
+
+/* ============ data & calculations ============ */
+let entries = [], audit = [], loaded = false;
+const inSec = s => entries.filter(e=>e.section===s).sort((a,b)=>a.sort-b.sort||a.id-b.id);
+function lines(s){                                  // balance-sheet lines: entries with the same "line" are added together
+  const map = new Map();
+  inSec(s).forEach(e=>{ const k=(e.grp||e.name).trim(); if(!map.has(k)) map.set(k,{label:k,amount:0,items:[]}); const L=map.get(k); L.amount+=e.amount; L.items.push(e); });
+  return [...map.values()];
+}
+const secTotal = s => sum(inSec(s));
+const totals = () => { const a=secTotal("fixed")+secTotal("current")+secTotal("deferred"), l=secTotal("liabilities"), q=secTotal("equity"); return {assets:a, liab:l, equity:q, right:l+q}; };
+const assetEntries = () => entries.filter(e=>SECTIONS[e.section].side==="A");
+
+/* ============ rendering ============ */
+const openSecs = new Set();
+function secRows(list){
+  return list.map(s=>{
+    const open=openSecs.has(s);
+    let h=`<tr class="main ${open?"open":""}" data-sec="${s}"><td>${bi(SECTIONS[s])}</td><td class="num">${fmt(secTotal(s))}</td></tr>`;
+    if(open){ const L=lines(s); h += L.length ? L.map(x=>`<tr class="line"><td dir="auto">${esc(x.label)}</td><td class="num">${fmt(x.amount)}</td></tr>`).join("") : `<tr class="line"><td colspan="2">No entries</td></tr>`; }
+    return h;
+  }).join("");
+}
+function renderBalance(){
+  const t=totals();
+  $("#tAssets").innerHTML = `<thead><tr><th>الأصول (Assets)</th><th class="num">المبلغ (دولار)</th></tr></thead><tbody>${secRows(["fixed","current","deferred"])}
+    <tr class="total"><td>إجمالي الأصول<span class="en" style="color:#44546a">Total assets</span></td><td class="num">${fmt(t.assets)}</td></tr></tbody>`;
+  $("#tLiab").innerHTML = `<thead><tr><th>الخصوم وحقوق الملكية (Liabilities &amp; Equity)</th><th class="num">المبلغ (دولار)</th></tr></thead><tbody>${secRows(["liabilities","equity"])}
+    <tr class="total"><td>إجمالي الخصوم + رأس المال<span class="en" style="color:#44546a">Total liabilities + capital</span></td><td class="num">${fmt(t.right)}</td></tr></tbody>`;
+  const ok = cents(t.assets)===cents(t.right), pill=$("#balPill");
+  pill.className = "pill "+(loaded && entries.length ? (ok?"ok":"bad") : ""); pill.textContent = !entries.length ? "—" : ok ? "متوازنة (Balanced)" : "غير متوازنة (Unbalanced)";
+  $("#balDiff").textContent = entries.length && !ok ? "Difference: "+fmt(Math.abs(t.assets-t.right)) : "";
+}
+function renderSummary(){
+  const rows = CAT_ORDER.map(c=>({c, amt:sum(assetEntries().filter(e=>e.category===c))})).filter(r=>r.c!=="other" || cents(r.amt)!==0);
+  $("#tSummary").innerHTML = `<thead><tr><th>الفئة (Category)</th><th class="num">المبلغ (USD)</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${bi(CATS[r.c])}</td><td class="num">${fmt(r.amt)}</td></tr>`).join("")}
+    <tr class="total"><td>إجمالي التكاليف<span class="en" style="color:#44546a">Total costs</span></td><td class="num">${fmt(sum(rows.map(r=>({amount:r.amt}))))}</td></tr></tbody>`;
+}
+function renderDetails(){
+  const mode=$("#dMode").value; let html="";
+  const groups = mode==="section" ? SEC_ORDER.map(s=>({title:SECTIONS[s], list:inSec(s)})) : CAT_ORDER.map(c=>({title:CATS[c], list:entries.filter(e=>e.category===c).sort((a,b)=>a.sort-b.sort||a.id-b.id)})).filter(g=>g.list.length);
+  groups.forEach(g=>{ html += `<h2 style="margin-top:14px">${bi(g.title)}</h2><div class="tw"><table><thead><tr><th>البند (Item)</th><th class="num">المبلغ (دولار)</th></tr></thead><tbody>
+    ${g.list.map(e=>`<tr><td dir="auto">${esc(e.name)}</td><td class="num">${fmt(e.amount)}</td></tr>`).join("") || `<tr><td colspan="2" class="muted">No entries</td></tr>`}
+    <tr class="total"><td>المجموع<span class="en" style="color:#44546a">Total</span></td><td class="num">${fmt(sum(g.list))}</td></tr></tbody></table></div>`; });
+  $("#dBody").innerHTML = html || '<p class="muted">No entries yet.</p>';
+}
+function fillSelects(){
+  const secOpts = SEC_ORDER.map(s=>`<option value="${s}">${esc(SECTIONS[s].ar)} · ${esc(SECTIONS[s].en)}</option>`).join("");
+  const catOpts = CAT_ORDER.map(c=>`<option value="${c}">${esc(CATS[c].ar)} · ${esc(CATS[c].en)}</option>`).join("");
+  $("#fSec").innerHTML = '<option value="">All sections · الكل</option>'+secOpts; $("#fCat").innerHTML = '<option value="">All categories · الكل</option>'+catOpts;
+  $("#eSec").innerHTML = secOpts; $("#eCat").innerHTML = catOpts;
+}
+function renderEntries(){
+  const s=$("#fSec").value, c=$("#fCat").value, q=$("#fQ").value.trim().toLowerCase();
+  const list = entries.filter(e=>(!s||e.section===s)&&(!c||e.category===c)&&(!q||(e.name+" "+e.grp+" "+e.note).toLowerCase().includes(q)))
+                      .sort((a,b)=>SEC_ORDER.indexOf(a.section)-SEC_ORDER.indexOf(b.section)||a.sort-b.sort||a.id-b.id);
+  $("#tEntries").innerHTML = `<thead><tr><th>Section · القسم</th><th>Category · الفئة</th><th>Name · البند</th><th>Line</th><th class="num">Amount</th><th></th></tr></thead><tbody>
+    ${list.map(e=>`<tr><td>${esc(SECTIONS[e.section].ar)}</td><td>${esc(CATS[e.category].ar)}</td><td dir="auto">${esc(e.name)}${e.note?`<span class="en" dir="auto">${esc(e.note)}</span>`:""}</td>
+      <td dir="auto" class="muted">${esc(e.grp)}</td><td class="num">${fmt(e.amount)}</td>
+      <td style="white-space:nowrap"><button class="btn ghost small" data-edit="${e.id}">Edit</button> <button class="btn danger small" data-del="${e.id}">Delete</button></td></tr>`).join("") || `<tr><td colspan="6" class="muted">No entries${entries.length?" match the filters":" yet"}.</td></tr>`}
+    <tr class="total"><td colspan="4">Total of the ${list.length} shown · المجموع</td><td class="num">${fmt(sum(list))}</td><td></td></tr></tbody>`;
+}
+function describe(a){
+  let d={}; try{ d=JSON.parse(a.detail); }catch(e){}
+  if(a.action==="add") return `Added: ${d.after?.name||""} — ${fmt(d.after?.amount)}`;
+  if(a.action==="delete") return `Deleted: ${d.before?.name||""} — ${fmt(d.before?.amount)}`;
+  if(a.action==="edit"){ const b=d.before||{}, x=d.after||{}, ch=[];
+    if(b.name!==x.name) ch.push(`name “${b.name}” → “${x.name}”`); if(Number(b.amount)!==Number(x.amount)) ch.push(`amount ${fmt(b.amount)} → ${fmt(x.amount)}`);
+    if(b.section!==x.section) ch.push("section changed"); if(b.category!==x.category) ch.push("category changed"); if((b.grp||"")!==(x.grp||"")) ch.push("line changed"); if((b.note||"")!==(x.note||"")) ch.push("note changed");
+    return `Edited: ${x.name||""}${ch.length?" — "+ch.join("; "):""}`; }
+  if(a.action==="replace") return `All entries replaced: ${d.count} entries, total assets ${d.assets!=null?fmt(d.assets):"—"}`;
+  return a.action;
+}
+function renderHistory(){
+  $("#tHistory").innerHTML = `<thead><tr><th>When</th><th>What</th></tr></thead><tbody>${audit.map(a=>`<tr><td style="white-space:nowrap">${esc(new Date(a.t).toLocaleString("en-GB"))}</td><td dir="auto">${esc(describe(a))}</td></tr>`).join("") || '<tr><td colspan="2" class="muted">No changes recorded yet.</td></tr>'}</tbody>`;
+}
+function renderSeed(){
+  $("#seedBanner").innerHTML = (loaded && !entries.length) ? `<div class="banner"><span><b>No accounting data yet.</b> Load the opening balance sheet from your Excel file (total assets $27,727).</span><button class="btn" id="seedBtn">Load opening balance sheet</button></div>` : "";
+  const b=$("#seedBtn"); if(b) b.onclick = async ()=>{ try{ await api({action:"acct_replace", opId:uid(), entries:SEED}); toast("Opening balance sheet loaded."); await load(); }catch(e){ fail(e,"load the data"); } };
+}
+function renderAll(){ renderSeed(); renderBalance(); renderSummary(); renderDetails(); renderEntries(); renderHistory(); }
+
+async function load(){
+  try{ const r = await api({action:"acct_get", audit:true}); entries = r.entries.map(e=>({...e, amount:Number(e.amount)||0, sort:Number(e.sort)||0})); audit = r.audit||[]; loaded = true; $("#status").textContent = "● Live"; }
+  catch(e){ $("#status").textContent = "⚠ Not loaded"; fail(e,"load the data"); }
+  renderAll();
+}
+
+/* ============ events ============ */
+$("#tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return;
+  document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("on",x===b)); document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.id==="tab-"+b.dataset.tab));
+  if(["balance","history","entries","summary","details"].includes(b.dataset.tab)) load(); });
+document.querySelector("main").addEventListener("click", e=>{ const r=e.target.closest("tr.main"); if(!r) return; const s=r.dataset.sec; openSecs.has(s)?openSecs.delete(s):openSecs.add(s); renderBalance(); });
+["#fSec","#fCat","#fQ"].forEach(s=>$(s).addEventListener("input",renderEntries)); $("#dMode").addEventListener("input",renderDetails);
+
+let editId = 0;
+function openEntry(e){
+  editId = e ? e.id : 0; $("#entryTitle").textContent = e ? "Edit entry · تعديل" : "Add entry · إضافة";
+  $("#eSec").value = e ? e.section : ($("#fSec").value || "fixed"); $("#eCat").value = e ? e.category : ($("#fCat").value || "other");
+  $("#eName").value = e ? e.name : ""; $("#eGrp").value = e ? e.grp : ""; $("#eAmt").value = e ? e.amount : ""; $("#eNote").value = e ? e.note : "";
+  fillGrp(); $("#entryDlg").showModal(); $("#eName").focus();
+}
+function fillGrp(){ $("#grpList").innerHTML = lines($("#eSec").value).map(l=>`<option value="${esc(l.label)}">`).join(""); }
+$("#eSec").addEventListener("input", ()=>{ fillGrp(); if(SECTIONS[$("#eSec").value].side==="L") $("#eCat").value="other"; });
+$("#addEntry").onclick = ()=>openEntry(null); $("#eCancel").onclick = ()=>$("#entryDlg").close();
+$("#tEntries").addEventListener("click", async e=>{
+  const ed=e.target.closest("[data-edit]"), dl=e.target.closest("[data-del]");
+  if(ed) openEntry(entries.find(x=>x.id===+ed.dataset.edit));
+  if(dl){ const en=entries.find(x=>x.id===+dl.dataset.del); if(!en) return;
+    if(!(await ask("Delete entry",`<p>Delete <b dir="auto">${esc(en.name)}</b> (${fmt(en.amount)})?<br><span class="muted">The change is recorded in the history.</span></p>`,[{label:"Cancel",value:false},{label:"Delete",value:true,cls:"danger"}]))) return;
+    try{ await api({action:"acct_del", opId:uid(), id:en.id}); toast("Deleted."); await load(); }catch(err){ fail(err,"delete the entry"); } }
+});
+$("#entryForm").addEventListener("submit", async ev=>{
+  ev.preventDefault();
+  const amt = Number($("#eAmt").value); if(!($("#eName").value.trim()) || !isFinite(amt) || amt<0){ toast("Enter a name and an amount of 0 or more."); return; }
+  const entry = { id:editId||undefined, section:$("#eSec").value, category:$("#eCat").value, name:$("#eName").value.trim(), grp:$("#eGrp").value.trim(), amount:amt, note:$("#eNote").value.trim() };
+  $("#eSave").disabled = true;
+  try{ await api({action:"acct_put", opId:uid(), entry}); $("#entryDlg").close(); toast(editId?"Saved.":"Entry added."); await load(); }
+  catch(err){ fail(err,"save the entry"); } finally{ $("#eSave").disabled=false; }
+});
+
+/* ============ Excel ============ */
+function sheetFrom(rows, widths){ const ws=XLSX.utils.aoa_to_sheet(rows.map(r=>r.map(c=>c&&typeof c==="object"?"":c))); rows.forEach((r,i)=>r.forEach((c,j)=>{ if(c&&typeof c==="object"){ ws[XLSX.utils.encode_cell({r:i,c:j})]=c; } })); ws["!cols"]=widths.map(w=>({wch:w})); ws["!ref"]=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(rows.length-1,0),c:Math.max(...rows.map(r=>r.length))-1}}); return ws; }
+const USD = "\\$#,##0";
+const numCell = (v,f)=>({t:"n", v, z:USD, ...(f?{f}:{})});
+function exportExcel(){
+  if(typeof XLSX==="undefined"){ toast("The Excel library could not load — check the internet connection."); return; }
+  if(!entries.length){ toast("There is nothing to export yet."); return; }
+  const wb = XLSX.utils.book_new(), q = n=>"'"+n+"'", add=(name,ws)=>XLSX.utils.book_append_sheet(wb,ws,name);
+  const totalAddr = {};                                     // section -> address of its total cell
+  const sectionSheet = s=>{ const L=lines(s), rows=[[SECTIONS[s].title],[],["البند (Item)","المبلغ (دولار)"]];
+    L.forEach(x=>rows.push([x.label,numCell(x.amount)]));
+    const first=4, last=3+L.length, trow=4+L.length;
+    rows.push(["مجموع "+(s==="fixed"?"الأصول":s==="current"?"الأصول المتداولة":s==="deferred"?"مصاريف التأسيس":s==="liabilities"?"الخصوم":"حقوق الملكية"), L.length?numCell(sum(L),`SUM(B${first}:B${last})`):numCell(0)]);
+    totalAddr[s]=`${q(SECTIONS[s].xl)}!B${trow}`; return sheetFrom(rows,[70,16]); };
+  const T = totals(), bal = cents(T.assets)===cents(T.right);
+  const ref = s=>numCell(secTotal(s), totalAddr[s]);
+  // sheet order as in the original workbook; section sheets must be built first to know their total cells
+  const sheets = {}; SEC_ORDER.forEach(s=>sheets[s]=sectionSheet(s));
+  const balRows = [["الميزانية العمومية الافتتاحية للكافيه"],["(أصول = خصوم + رأس المال)"],[],["الأصول (Assets)"],["البند","المبلغ (دولار)"],
+    [SECTIONS.fixed.bal,ref("fixed")],[SECTIONS.current.bal,ref("current")],[SECTIONS.deferred.bal,ref("deferred")],["إجمالي الأصول",numCell(T.assets,"SUM(B6:B8)")],[],
+    ["الخصوم وحقوق الملكية (Liabilities & Equity)"],["البند","المبلغ (دولار)"],[SECTIONS.liabilities.bal,ref("liabilities")],[SECTIONS.equity.bal,ref("equity")],["إجمالي الخصوم + رأس المال",numCell(T.right,"SUM(B13:B14)")],[],
+    ["التحقق من توازن الميزانية (Balance Check)",{t:"s",v:bal?"متوازنة (Balanced)":"غير متوازنة (Unbalanced)",f:'IF(B9=B15,"متوازنة (Balanced)","غير متوازنة (Unbalanced)")'}]];
+  add("الميزانية العمومية", sheetFrom(balRows,[60,24]));
+  const cats = CAT_ORDER.map(c=>({c,amt:sum(assetEntries().filter(e=>e.category===c))})).filter(r=>r.c!=="other"||cents(r.amt)!==0);
+  const sumRows=[["1. الملخص النهائي (Final Summary)"],[],["الفئة (Category)","المبلغ (USD)"],...cats.map(r=>[CATS[r.c].ar,numCell(r.amt)]),["إجمالي التكاليف",numCell(sum(cats.map(r=>({amount:r.amt}))),`SUM(B4:B${3+cats.length})`)]];
+  add("الملخص النهائي", sheetFrom(sumRows,[50,16]));
+  SEC_ORDER.forEach(s=>add(SECTIONS[s].xl, sheets[s]));
+  Object.keys(CAT_SHEETS).forEach(c=>{ const L=entries.filter(e=>e.category===c).sort((a,b)=>a.sort-b.sort||a.id-b.id), cs=CAT_SHEETS[c];
+    const rows=[[cs.title],[],["البند (Item)","المبلغ (دولار)"],...L.map(e=>[e.name,numCell(e.amount)]),[cs.total, L.length?numCell(sum(L),`SUM(B4:B${3+L.length})`):numCell(0)]];
+    add(cs.xl, sheetFrom(rows,[70,16])); });
+  const flat=[["Section","Category","Line","Name","Amount","Note","Sort"],...entries.slice().sort((a,b)=>a.sort-b.sort||a.id-b.id).map(e=>[e.section,e.category,e.grp,e.name,e.amount,e.note,e.sort])];
+  add("Entries", XLSX.utils.aoa_to_sheet(flat));
+  wb.Workbook = { Views: wb.SheetNames.map(()=>({RTL:true})) };
+  const d=new Date(), p=n=>String(n).padStart(2,"0");
+  XLSX.writeFile(wb, `StarC_Accounting_${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}.xlsx`); toast("Excel file downloaded.");
+}
+$("#exportBtn").onclick = exportExcel;
+$("#importFile").addEventListener("change", async ev=>{
+  const file=ev.target.files[0]; ev.target.value=""; if(!file) return;
+  if(typeof XLSX==="undefined"){ toast("The Excel library could not load."); return; }
+  try{
+    const wb = XLSX.read(await file.arrayBuffer(), {type:"array"}); const ws = wb.Sheets["Entries"];
+    if(!ws){ toast("This file has no 'Entries' sheet — use a file downloaded from this page."); return; }
+    const rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:""}).slice(1).filter(r=>String(r[3]).trim()!=="");
+    const list = rows.map(r=>({section:String(r[0]),category:String(r[1]),grp:String(r[2]),name:String(r[3]),amount:Number(r[4])||0,note:String(r[5]),sort:Number(r[6])||0}));
+    const bad = list.findIndex(e=>!SECTIONS[e.section]||!CATS[e.category]||e.amount<0);
+    if(!list.length){ toast("That file has no entries."); return; } if(bad>=0){ toast("Row "+(bad+2)+" of the Entries sheet is not valid."); return; }
+    if(!(await ask("Replace all entries?",`<p>The file has <b>${list.length}</b> entries (total assets ${fmt(sum(list.filter(e=>SECTIONS[e.section].side==="A")))}).<br>This <b>replaces all ${entries.length} current entries</b>. The change is recorded in the history.</p>`,[{label:"Cancel",value:false},{label:"Replace all",value:true,cls:"danger"}]))) return;
+    await api({action:"acct_replace", opId:uid(), entries:list}); toast("Restored "+list.length+" entries."); await load();
+  }catch(err){ if(err&&err.kind) fail(err,"restore"); else { console.error(err); toast("Could not read that file."); } }
+});
+
+/* ============ start ============ */
+fillSelects();
+window.acctStart = ()=>load();
+if(window.ACCT_OK) acctStart();
+</script>
+</body>
+</html>
