@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>Lunch Calendar | تقويم الغداء</title>
+<style>
+:root{--bg:#faf6f1;--card:#fff;--ink:#2b211b;--mut:#7a6a5f;--line:#e6dccf;--brand:#6f4e37;--gold:#c8a165;--soft:#f4ece3;--today:#fff3d6}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1713;--card:#272019;--ink:#f1e8dc;--mut:#b3a392;--line:#443a2f;--soft:#2f261d;--today:#4a3a1d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Tahoma,Arial,sans-serif}
+header{background:var(--brand);color:#fff;padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:19px}.hb{display:flex;gap:6px;flex-wrap:wrap}
+.b{font:inherit;font-size:13px;border:0;border-radius:99px;padding:6px 13px;cursor:pointer;background:rgba(255,255,255,.18);color:#fff}.b:hover{background:rgba(255,255,255,.3)}
+main{max-width:1100px;margin:0 auto;padding:14px 10px 50px}
+.nav{display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:10px}
+.nav button,.nav select{font:inherit;font-size:16px;padding:7px 12px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;cursor:pointer}.nav select{font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.wd{text-align:center;font-size:12px;color:var(--mut);font-weight:700;padding:4px 0}
+.day{min-height:84px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:5px 6px;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;gap:2px;text-align:start;font:inherit;color:inherit}
+.day:hover{border-color:var(--gold)}.day.off{background:var(--soft)}.day.today{background:var(--today);border-color:var(--gold);border-width:2px}.day.empty{visibility:hidden}
+.day .n{font-size:12px;color:var(--mut);font-weight:700}.day .m{font-size:13px;font-weight:600;word-break:break-word;line-height:1.25}.day.has .n{color:var(--brand)}
+dialog{border:1px solid var(--line);border-radius:14px;padding:18px;background:var(--card);color:var(--ink);width:min(92vw,400px)}dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h3{margin:0 0 10px}label{display:block;font-size:12px;color:var(--mut);font-weight:700;margin:10px 0 4px}
+input[type=text],input[type=date]{font:inherit;width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.chk{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:14px;color:var(--ink);font-weight:400}.chk input{width:auto}
+.row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.btn{font:inherit;font-weight:700;padding:9px 16px;border-radius:8px;border:1px solid var(--brand);background:var(--brand);color:#fff;cursor:pointer}.btn.g{background:transparent;color:var(--brand)}
+.note{font-size:12px;color:var(--mut);margin-top:14px;text-align:center}
+@media (max-width:640px){.day{min-height:64px;padding:3px}.day .m{font-size:11px}}
+@media print{header,.nav,.note{display:none}.day{min-height:70px}body{background:#fff;color:#000}}
+</style></head><body>
+<header><h1 id="ti"></h1><div class="hb"><button class="b" id="bt"></button><button class="b" id="bp"></button><button class="b" id="bx"></button><button class="b" id="bi"></button><button class="b" id="bw"></button><button class="b" id="bl"></button></div></header>
+<main><div class="nav"><button id="pv">◀</button><select id="ms"></select><button id="nx">▶</button></div><div class="grid" id="g"></div><p class="note" id="nt"></p></main>
+
+<dialog id="dl"><form method="dialog" id="df"><h3 id="dd"></h3><label id="lm"></label><input type="text" id="mi" list="ml" maxlength="120" autocomplete="off"><datalist id="ml"></datalist>
+<label class="chk"><input type="checkbox" id="rp"><span id="lr"></span></label><div id="ru" style="display:none"><label id="lu"></label><input type="date" id="un"></div>
+<div class="row"><button class="btn" id="sv"></button><button class="btn g" type="button" id="cl"></button><button class="btn g" type="button" id="cn"></button></div></form></dialog>
+
+<dialog id="pt"><form method="dialog" id="pf"><h3 id="ph"></h3><div id="pr"></div><label id="pa"></label><input type="date" id="p1"><label id="pb"></label><input type="date" id="p2">
+<label class="chk"><input type="checkbox" id="po"><span id="pl"></span></label><div class="row"><button class="btn" id="pg"></button><button class="btn g" type="button" id="pc"></button></div></form></dialog>
+<input type="file" id="fi" accept="application/json" style="display:none">
+
+<script>
+var KEY="lunchCal.v1",MIN=[2026,0],MAX=[2028,11],$=function(s){return document.querySelector(s)};
+var T={en:{ti:"Lunch Calendar",today:"Today",pat:"Weekly pattern",exp:"Export backup",imp:"Import",ws:"Week starts: ",lang:"عربي",meal:"Lunch meal",rep:"Repeat on the same weekday",until:"until",save:"Save",clr:"Clear day",cnt:"Cancel",
+ ph:"Fill a weekly pattern",from:"From",to:"To",over:"Overwrite days that already have a meal",fill:"Fill calendar",note:"Saved in this browser only. Use Export to keep a backup or move to another device.",ok:"Imported ✔",bad:"Invalid file",conf:"Replace all current meals with the file?"},
+ ar:{ti:"تقويم الغداء",today:"اليوم",pat:"نمط أسبوعي",exp:"تصدير نسخة احتياطية",imp:"استيراد",ws:"بداية الأسبوع: ",lang:"English",meal:"وجبة الغداء",rep:"كرر في نفس اليوم من كل أسبوع",until:"حتى",save:"حفظ",clr:"مسح اليوم",cnt:"إلغاء",
+ ph:"تعبئة نمط أسبوعي",from:"من",to:"إلى",over:"استبدال الأيام التي فيها وجبة",fill:"تعبئة التقويم",note:"يُحفظ في هذا المتصفح فقط. استخدم التصدير لنسخة احتياطية أو للنقل إلى جهاز آخر.",ok:"تم الاستيراد ✔",bad:"ملف غير صالح",conf:"استبدال كل الوجبات الحالية بالملف؟"}};
+var D=load(),cur=new Date(),Y=Math.min(Math.max(cur.getFullYear(),MIN[0]),MAX[0]),M=cur.getFullYear()<MIN[0]?0:(cur.getFullYear()>MAX[0]?11:cur.getMonth()),sel=null;
+function load(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.meals)return d}catch(e){}return{meals:{},ws:1,lang:"en",pat:["","","","","","",""]}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}}
+function t(k){return T[D.lang][k]}
+function p2(n){return String(n).padStart(2,"0")}
+function ymd(d){return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())}
+function pd(s){var a=s.split("-");return new Date(+a[0],+a[1]-1,+a[2])}
+function loc(){return D.lang==="ar"?"ar-u-nu-latn":"en-GB"}
+function render(){
+  document.documentElement.lang=D.lang;document.documentElement.dir=D.lang==="ar"?"rtl":"ltr";
+  $("#ti").textContent=t("ti");$("#bt").textContent=t("today");$("#bp").textContent=t("pat");$("#bx").textContent=t("exp");$("#bi").textContent=t("imp");$("#bl").textContent=t("lang");
+  var wsn=new Intl.DateTimeFormat(loc(),{weekday:"long"}).format(new Date(2024,0,[6,7,1][[6,0,1].indexOf(D.ws)]));$("#bw").textContent=t("ws")+wsn;$("#nt").textContent=t("note");
+  var ms=$("#ms");ms.innerHTML="";for(var y=MIN[0];y<=MAX[0];y++)for(var m=0;m<12;m++){var o=document.createElement("option");o.value=y+"-"+m;o.textContent=new Intl.DateTimeFormat(loc(),{month:"long",year:"numeric"}).format(new Date(y,m,1));ms.appendChild(o)}
+  ms.value=Y+"-"+M;
+  var g=$("#g");g.innerHTML="";var days=[0,1,2,3,4,5,6].map(function(i){return(D.ws+i)%7});
+  days.forEach(function(w){var e=document.createElement("div");e.className="wd";e.textContent=new Intl.DateTimeFormat(loc(),{weekday:"short"}).format(new Date(2024,0,7+w));g.appendChild(e)});
+  var first=new Date(Y,M,1),lead=(first.getDay()-D.ws+7)%7,n=new Date(Y,M+1,0).getDate(),tk=ymd(new Date());
+  for(var i=0;i<lead;i++){var e=document.createElement("div");e.className="day empty";g.appendChild(e)}
+  for(var d=1;d<=n;d++){var dt=new Date(Y,M,d),k=ymd(dt),m=D.meals[k],b=document.createElement("button");
+    b.className="day"+(m&&m.m?" has":"")+(dt.getDay()===5||dt.getDay()===6?" off":"")+(k===tk?" today":"");b.type="button";
+    b.innerHTML='<span class="n">'+d+'</span><span class="m"></span>';b.lastChild.textContent=m&&m.m?m.m:"";b.onclick=(function(k){return function(){edit(k)}})(k);g.appendChild(b)}
+  var dl=$("#ml");dl.innerHTML="";var seen={};Object.keys(D.meals).forEach(function(k){var v=D.meals[k].m;if(v&&!seen[v]){seen[v]=1;var o=document.createElement("option");o.value=v;dl.appendChild(o)}});
+}
+function edit(k){sel=k;var m=D.meals[k];$("#dd").textContent=new Intl.DateTimeFormat(loc(),{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(pd(k));
+  $("#lm").textContent=t("meal");$("#mi").value=m?m.m:"";$("#lr").textContent=t("rep");$("#rp").checked=false;$("#ru").style.display="none";$("#lu").textContent=t("until");$("#un").value=MAX[0]+"-12-31";
+  $("#sv").textContent=t("save");$("#cl").textContent=t("clr");$("#cn").textContent=t("cnt");$("#dl").showModal();setTimeout(function(){$("#mi").focus()},50)}
+$("#rp").onchange=function(){$("#ru").style.display=this.checked?"block":"none"};
+function setMeal(k,v){if(v)D.meals[k]={m:v};else delete D.meals[k]}
+$("#df").onsubmit=function(){var v=$("#mi").value.trim();setMeal(sel,v);
+  if($("#rp").checked&&$("#un").value){var d=pd(sel),e=pd($("#un").value);for(d.setDate(d.getDate()+7);d<=e;d.setDate(d.getDate()+7))setMeal(ymd(d),v)}
+  save();render()};
+$("#cl").onclick=function(){setMeal(sel,"");save();render();$("#dl").close()};$("#cn").onclick=function(){$("#dl").close()};
+$("#bp").onclick=function(){$("#ph").textContent=t("ph");var h="";for(var i=0;i<7;i++){var w=(D.ws+i)%7;h+='<label>'+new Intl.DateTimeFormat(loc(),{weekday:"long"}).format(new Date(2024,0,7+w))+'</label><input type="text" class="pi" data-w="'+w+'" maxlength="120" value=""/>'}
+  $("#pr").innerHTML=h;[].forEach.call(document.querySelectorAll(".pi"),function(e){e.value=D.pat[+e.dataset.w]||"";e.setAttribute("list","ml")});
+  $("#pa").textContent=t("from");$("#pb").textContent=t("to");$("#p1").value=ymd(new Date(Y,M,1));$("#p2").value=MAX[0]+"-12-31";$("#pl").textContent=t("over");$("#po").checked=false;$("#pg").textContent=t("fill");$("#pc").textContent=t("cnt");$("#pt").showModal()};
+$("#pf").onsubmit=function(){[].forEach.call(document.querySelectorAll(".pi"),function(e){D.pat[+e.dataset.w]=e.value.trim()});
+  var d=pd($("#p1").value),e=pd($("#p2").value),ov=$("#po").checked;for(;d<=e;d.setDate(d.getDate()+1)){var v=D.pat[d.getDay()],k=ymd(d);if(v&&(ov||!D.meals[k]))setMeal(k,v)}save();render()};
+$("#pc").onclick=function(){$("#pt").close()};
+$("#pv").onclick=function(){go(-1)};$("#nx").onclick=function(){go(1)};
+function go(s){var i=Y*12+M+s;if(i<MIN[0]*12+MIN[1]||i>MAX[0]*12+MAX[1])return;Y=Math.floor(i/12);M=i%12;render()}
+$("#ms").onchange=function(){var a=this.value.split("-");Y=+a[0];M=+a[1];render()};
+$("#bt").onclick=function(){var n=new Date();Y=Math.min(Math.max(n.getFullYear(),MIN[0]),MAX[0]);M=n.getFullYear()<MIN[0]?0:(n.getFullYear()>MAX[0]?11:n.getMonth());render()};
+$("#bw").onclick=function(){D.ws=D.ws===1?6:(D.ws===6?0:1);save();render()};
+$("#bl").onclick=function(){D.lang=D.lang==="en"?"ar":"en";save();render()};
+$("#bx").onclick=function(){var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D)],{type:"application/json"}));a.download="lunch-calendar-"+ymd(new Date())+".json";a.click()};
+$("#bi").onclick=function(){$("#fi").click()};
+$("#fi").onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var d=JSON.parse(r.result);if(!d||typeof d.meals!=="object")throw 0;if(!confirm(t("conf")))return;D=Object.assign({ws:1,lang:D.lang,pat:["","","","","","",""]},d);save();render();alert(t("ok"))}catch(e){alert(t("bad"))}};r.readAsText(f);this.value=""};
+render();
+</script></body></html>
