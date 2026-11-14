@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>StarC — Discount offers | عروض الخصم</title><link rel="stylesheet" href="/services/services.css"></head><body>
+<header><div><h1>Discount offers · عروض الخصم</h1><small>Create coupons · إنشاء قسائم</small></div>
+<div class="hbtns"><a class="hbtn" href="check.html">Check a coupon · فحص قسيمة</a><a class="hbtn" href="/services/">Back · رجوع</a><button class="hbtn" onclick="gateLock()">Lock · قفل</button></div></header>
+<main>
+ <div class="card">
+  <label for="pct">Discount percentage, up to 100% · نسبة الخصم (حتى 100%)</label><input id="pct" type="number" min="1" max="100" value="25">
+  <div class="chips" id="pcts"></div>
+  <label for="qt">Number of coupons, each with its own code (1–20) · عدد القسائم، لكل واحدة كود مختلف</label><input id="qt" type="number" min="1" max="20" value="1">
+  <div class="chips" id="qts"></div>
+  <label for="nm">Holder name · اسم حامل القسيمة</label><input id="nm" maxlength="60" placeholder="e.g. Sara Ahmed · مثال: سارة أحمد">
+  <label for="ln">Line before the name (you can edit or clear it) · سطر قبل الاسم</label><input id="ln" maxlength="60">
+  <label for="ad">Address on the coupon (you can edit it) · العنوان على القسيمة</label><input id="ad" maxlength="120">
+  <div class="chips"><button class="btn ghost" id="rs" type="button">↺ Default text · النص الافتراضي</button></div>
+  <label for="vd">Valid until · صالحة حتى</label><input id="vd" type="date">
+  <div class="chips" id="dys"></div>
+  <div class="err" id="cerr"></div>
+  <button class="btn" id="gen" style="width:100%;margin-top:6px">Generate coupons with QR · إنشاء القسائم مع QR</button>
+ </div>
+ <div id="result" class="hide"></div>
+ <div class="card"><div style="display:flex;align-items:center"><b style="flex:1">Recent coupons · آخر القسائم</b><button class="btn ghost" id="rl">Refresh · تحديث</button></div><div id="ls"></div></div>
+</main>
+<script src="/starc-config.js"></script><script src="/starc-auth.js"></script><script src="/services/gate.js"></script>
+<script src="lib/qrcode.js"></script><script src="discount.js"></script>
+<script>
+var $=function(s){return document.querySelector(s)},made=[];
+function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}function read(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function defaults(){$("#ln").value=DC.DEFAULT_LINE;$("#ad").value=DC.DEFAULT_ADDRESS}
+function start(){
+  $("#vd").min=DC.today();$("#vd").value=DC.addDays(14);
+  var l=read("dcLine"),a=read("dcAddr");$("#ln").value=l===null?DC.DEFAULT_LINE:l;$("#ad").value=a===null?DC.DEFAULT_ADDRESS:a;
+  $("#pcts").innerHTML=[10,25,50,100].map(function(n){return '<button class="btn ghost" data-p="'+n+'">'+n+'%</button>'}).join("");
+  $("#qts").innerHTML=[1,5,10].map(function(n){return '<button class="btn ghost" data-q="'+n+'">'+n+'</button>'}).join("");
+  $("#dys").innerHTML=[7,14,30,90].map(function(n){return '<button class="btn ghost" data-d="'+n+'">'+n+' days · يوم</button>'}).join("");
+  load();
+}
+document.addEventListener("click",function(e){var g=function(k){return e.target.getAttribute&&e.target.getAttribute(k)},p=g("data-p"),d=g("data-d"),q=g("data-q");
+  if(p)$("#pct").value=p;if(d)$("#vd").value=DC.addDays(+d);if(q)$("#qt").value=q});
+$("#rs").onclick=defaults;
+function fail(e){$("#cerr").textContent=DC.errText(e);if(e.kind==="auth")gateLock()}
+async function load(){
+  try{var r=await DC.api({action:"coupon_list"});
+    $("#ls").innerHTML=r.coupons.length?r.coupons.map(function(c){return '<div class="li"><div><b>'+DC.esc(c.holder)+'</b><br><span class="note">'+c.percent+'% · '+c.validUntil+' · <span class="code">'+c.code+'</span></span></div><span class="chip '+c.status+'">'+DC.status[c.status]+'</span>'+(c.status==="used"?'<button class="btn ghost" data-r="'+c.code+'">Reactivate · إعادة تفعيل</button>':'')+'</div>'}).join(""):'<p class="note">No coupons yet · لا توجد قسائم بعد</p>'}
+  catch(e){$("#ls").innerHTML='<p class="err">'+DC.errText(e)+'</p>';if(e.kind==="auth")gateLock()}}
+function dl(i){var cv=document.getElementById("cv"+i);cv.toBlob(function(b){var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="starc-coupon-"+made[i].code+".png";a.click()})}
+function showCards(opts){
+  var h=made.length>1?'<div class="card"><button class="btn" id="dall" style="width:100%">Download all '+made.length+' images · تنزيل كل الصور</button></div>':'';
+  made.forEach(function(c,i){h+='<div class="card"><canvas id="cv'+i+'" class="cv"></canvas><div class="chips"><button class="btn" data-dl="'+i+'">Download image · تنزيل الصورة</button><button class="btn ghost" data-cp="'+i+'">Copy check link · نسخ الرابط</button></div></div>'});
+  $("#result").innerHTML=h;$("#result").classList.remove("hide");
+  made.forEach(function(c,i){DC.drawCard(document.getElementById("cv"+i),c,opts)});
+  var all=$("#dall");if(all)all.onclick=function(){made.forEach(function(c,i){setTimeout(function(){dl(i)},i*500)})};
+  if($("#result").scrollIntoView)$("#result").scrollIntoView({behavior:"smooth"});
+}
+document.addEventListener("click",function(e){var d=e.target.getAttribute&&e.target.getAttribute("data-dl"),c=e.target.getAttribute&&e.target.getAttribute("data-cp");
+  if(d!==null&&d!==undefined)dl(+d);
+  if(c!==null&&c!==undefined&&navigator.clipboard){var b=e.target;navigator.clipboard.writeText(DC.checkUrl(made[+c].code)).then(function(){b.textContent="Copied · تم النسخ"})}});
+$("#gen").onclick=async function(){
+  var p=Math.round(+$("#pct").value),n=$("#nm").value.trim(),v=$("#vd").value,q=Math.round(+$("#qt").value)||1;$("#cerr").textContent="";
+  if(!(p>=1&&p<=100)||!n||!v||v<DC.today()||q<1||q>20)return $("#cerr").textContent=DC.errText({detail:"invalid"});
+  var opts={line:$("#ln").value.trim(),address:$("#ad").value.trim()};store("dcLine",$("#ln").value);store("dcAddr",$("#ad").value);
+  $("#gen").disabled=true;
+  try{var r=await DC.api({action:"coupon_create",percent:p,holder:n,validUntil:v,count:q});made=r.coupons||[r.coupon];$("#nm").value="";load();showCards(opts)}
+  catch(e){fail(e)}finally{$("#gen").disabled=false}};
+$("#rl").onclick=load;
+document.addEventListener("click",async function(e){var c=e.target.getAttribute&&e.target.getAttribute("data-r");if(!c)return;
+  if(!confirm("Reactivate this coupon so it can be used again?\nإعادة تفعيل هذه القسيمة لتُستخدم مرة أخرى؟"))return;
+  e.target.disabled=true;
+  try{var r=await DC.api({action:"coupon_reactivate",code:c});if(r.coupon.status==="expired")alert("Reactivated, but its validity date has passed. Create a new coupon if it should be usable.\nتمت إعادة التفعيل لكن تاريخ الصلاحية انتهى. أنشئ قسيمة جديدة إن لزم.");load()}
+  catch(x){alert(DC.errText(x));if(x.kind==="auth")gateLock();else load()}});
+StarcGate('manager',start);
+</script></body></html>
