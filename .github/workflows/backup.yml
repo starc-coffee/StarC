@@ -1,0 +1,63 @@
+name: Backup starccafe.com
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"   # every Sunday at 03:00 UTC
+  workflow_dispatch:       # lets you run it manually from the Actions tab
+
+permissions:
+  contents: read
+
+env:
+  SITE_URL: https://starccafe.com
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set backup name
+        run: echo "STAMP=$(date -u +%Y-%m-%d_%H%M)" >> "$GITHUB_ENV"
+
+      - name: Create Git bundle (all branches, tags, history)
+        run: |
+          mkdir -p backup
+          git fetch --all --tags
+          git bundle create "backup/starccafe-repo_${STAMP}.bundle" --all
+
+      - name: Zip current site files
+        run: |
+          zip -r "backup/starccafe-files_${STAMP}.zip" . -x ".git/*" "backup/*"
+
+      - name: Snapshot the live site
+        continue-on-error: true   # don't fail the backup if the site is briefly down
+        run: |
+          mkdir -p snapshot
+          cd snapshot
+          wget --mirror --page-requisites --convert-links --adjust-extension \
+               --no-parent --wait=1 "$SITE_URL" || true
+          cd ..
+          zip -r "backup/starccafe-live_${STAMP}.zip" snapshot
+
+      - name: Upload backup as GitHub artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: starccafe-backup-${{ env.STAMP }}
+          path: backup/
+          retention-days: 90
+
+      # Optional off-GitHub copy to Cloudflare R2.
+      # Runs only if you add the four secrets listed in the setup notes.
+      - name: Copy to Cloudflare R2
+        if: ${{ secrets.R2_BUCKET != '' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          aws s3 cp backup/ "s3://${{ secrets.R2_BUCKET }}/${STAMP}/" --recursive \
+            --endpoint-url "https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
