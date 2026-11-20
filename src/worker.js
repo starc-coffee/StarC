@@ -3,7 +3,7 @@
  * Receives invoices from the billing page, stores them in the D1 table "records",
  * and checks the manager / employee passwords on the server.
  *
- * Also stores discount coupons (D1 table "coupons", actions coupon_create (1-20 at once) / coupon_list / coupon_get / coupon_redeem).
+ * Also stores discount coupons (D1 table "coupons", actions coupon_create (1-20 at once) / coupon_list / coupon_get / coupon_redeem / coupon_reactivate / coupon_delete).
  *
  * Secrets to set in Cloudflare (Worker > Settings > Variables and secrets):
  *   MANAGER_PASSWORD   EMPLOYEE_PASSWORD
@@ -316,6 +316,15 @@ async function coupons(env, action, req, role) {
     await db.prepare('INSERT INTO acct_audit (t, action, detail) VALUES (?, ?, ?)')
       .bind(Date.now(), 'coupon_reactivate', JSON.stringify({ code, holder: before.holder, percent: before.percent, usedAt: before.used_at, usedBy: before.used_by })).run();
     return { ok: true, coupon: couponView(await row()) };
+  }
+  if (action === 'coupon_delete') {                          // manager only: delete a coupon permanently (used or not)
+    if (role !== 'manager') return { ok: false, error: 'manager only' };
+    const before = await row();
+    if (!before) return { ok: false, error: 'not found' };
+    await db.prepare('DELETE FROM coupons WHERE code = ?').bind(code).run();
+    await db.prepare('INSERT INTO acct_audit (t, action, detail) VALUES (?, ?, ?)')
+      .bind(Date.now(), 'coupon_delete', JSON.stringify({ code, holder: before.holder, percent: before.percent, validUntil: before.valid_until, usedAt: before.used_at, usedBy: before.used_by })).run();
+    return { ok: true };
   }
   return { ok: false, error: 'unknown action' };
 }
