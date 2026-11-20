@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Meal Calendar</title>
+<style>
+:root{
+  --bg:#eef3f1; --card:#ffffff; --ink:#16302a; --muted:#6a7f78; --line:#d6e0dc;
+  --accent:#1d6b58; --accent-ink:#ffffff; --today:#f4b83a; --soft:#e2efe9; --warn:#b3412f;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#10201c; --card:#18302a; --ink:#e6f1ed; --muted:#93aaa2; --line:#2a4740; --accent:#4cc3a4; --accent-ink:#0b1c17; --soft:#1f3b34; --today:#f4b83a; --warn:#ef8a76}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding:12px;max-width:1100px;margin-inline:auto}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--today);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--card);padding:8px 14px;border-radius:10px}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.wa{background:#1fa855;color:#fff;border-color:#1fa855}
+.btn.danger{color:var(--warn)}
+.today{background:var(--accent);color:var(--accent-ink);border-radius:18px;padding:18px 20px;margin-bottom:14px}
+.today small{opacity:.85;display:block}
+.today .meal{font-size:clamp(28px,6vw,46px);font-weight:700;line-height:1.2;margin:6px 0 14px;min-height:1.2em}
+.today .meal.empty{opacity:.7;font-weight:500;font-style:italic}
+.today .row{display:flex;flex-wrap:wrap;gap:8px}
+.today .btn{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35);color:inherit}
+.today .btn:hover{background:rgba(255,255,255,.28)}
+.today .btn.wa{background:#1fa855;border-color:#1fa855;color:#fff}
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.bar h2{margin:0 auto 0 4px;font-size:22px}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.dow{font-size:13px;color:var(--muted);text-align:center;padding:4px 0}
+.cell{background:var(--card);border:1px solid var(--line);border-radius:10px;min-height:92px;padding:6px;text-align:start;display:flex;flex-direction:column;gap:4px;overflow:hidden}
+.cell:hover{border-color:var(--accent)}
+.cell.out{opacity:.45}
+.cell .n{font-size:13px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between}
+.cell .t{font-size:14px;line-height:1.3;font-weight:600;word-break:break-word}
+.cell.is-today{border:2px solid var(--today);background:var(--soft)}
+.cell.is-today .n{color:var(--ink)}
+.cell.edited .n::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--today)}
+.cell.free .t{color:var(--muted);font-weight:400}
+@media(max-width:640px){
+  body{padding:8px}
+  .cell{min-height:74px;padding:4px;border-radius:8px}
+  .cell .t{font-size:11px}
+  .cell .n{font-size:11px}
+  .bar h2{font-size:18px;flex-basis:100%;order:-1;margin:0}
+}
+dialog{border:none;border-radius:16px;padding:0;background:var(--card);color:var(--ink);width:min(560px,94vw);max-height:90vh}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dlg{padding:18px;display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow:auto}
+.dlg h3{margin:0;font-size:19px}
+.dlg label{font-size:14px;color:var(--muted)}
+.dlg input[type=text],.dlg input[type=search],.dlg textarea{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.dlg textarea{min-height:70px;resize:vertical}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.list{border:1px solid var(--line);border-radius:10px;max-height:300px;overflow:auto}
+.list button{display:flex;width:100%;justify-content:space-between;gap:10px;text-align:start;border:0;border-bottom:1px solid var(--line);background:transparent;padding:9px 12px}
+.list button:hover{background:var(--soft)}
+.list span:last-child{color:var(--muted);font-size:13px;white-space:nowrap}
+.mode{display:flex;gap:16px;font-size:15px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+.foot{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+
+<section class="today" aria-live="polite">
+  <small id="todayDate"></small>
+  <div class="meal" id="todayMeal" dir="auto"></div>
+  <div class="row">
+    <button class="btn" id="todayEdit">Edit text</button>
+    <button class="btn" id="todayChange">Change today's meal</button>
+    <button class="btn wa" id="todayShare">Share on WhatsApp</button>
+  </div>
+</section>
+
+<div class="bar">
+  <button class="btn" id="prev" aria-label="Previous month">&#8249;</button>
+  <button class="btn" id="next" aria-label="Next month">&#8250;</button>
+  <button class="btn" id="goToday">Today</button>
+  <h2 id="monthTitle"></h2>
+  <button class="btn wa" id="shareWeek">Share week</button>
+</div>
+
+<div class="grid" id="dows"></div>
+<div class="grid" id="grid"></div>
+
+<div class="foot">
+  <button class="btn" id="exportBtn">Download backup</button>
+  <button class="btn" id="importBtn">Restore backup</button>
+  <button class="btn danger" id="resetAll">Reset all edits</button>
+  <input type="file" id="importFile" accept="application/json" hidden>
+</div>
+
+<!-- Day dialog -->
+<dialog id="dayDlg">
+  <div class="dlg">
+    <h3 id="dayTitle"></h3>
+    <div>
+      <label for="dayText">Meal</label>
+      <textarea id="dayText" dir="auto" placeholder="Leave empty for a free day"></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="daySave">Save</button>
+      <button class="btn" id="dayPick">Pick from meal list</button>
+      <button class="btn wa" id="dayShare">WhatsApp</button>
+      <button class="btn" id="dayRestore">Restore original</button>
+      <button class="btn" id="dayClose">Close</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Picker dialog -->
+<dialog id="pickDlg">
+  <div class="dlg">
+    <h3 id="pickTitle"></h3>
+    <div class="mode" role="radiogroup" aria-label="How to apply">
+      <label><input type="radio" name="mode" value="swap" checked> Swap the two days</label>
+      <label><input type="radio" name="mode" value="copy"> Just use this meal</label>
+    </div>
+    <input type="search" id="pickSearch" placeholder="Search meals or dates" dir="auto">
+    <div class="list" id="pickList"></div>
+    <div class="actions"><button class="btn" id="pickClose">Cancel</button></div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- Original meal plan (start day, meals separated by |, empty = free day) ---------- */
+const PLAN = {
+"2026-11":[22,"لحمة أو بطاطا بالصينية|محمرة|فول مدمس او فلافل|كبة بطاطا|كبسة دجاج|تسقية|فاهيتا|مفركة بطاطا|مقلوبة فول"],
+"2026-12":[1,"بطاطا بالفرن (سمك)|بيتزا|كبة مقلية|معكرونة|مقلوبة بزاليا||محاشي|مشاوي وجناحات|بطاطا بالفرن (دجاج)|سبانخ|رز مع خضرا|هوت دوغ|ملوخية|سلطة بطاطا|سمبوسك|شاورما|بط مشوي|كبسة سمك|ورق عنب|مجدرة|بطاطا وبيض|ملظوم|فريكة|برغر|قارن يارق|شيشبرك|لحمة أو بطاطا بالصينية|بيضنجان مشوي مع شوربة|ثرود دجاج|كبسة دجاج|كتف مشوي"],
+"2027-01":[1,"كبدة وقلوبات|مفركة بطاطا|مقلوبة بيضنجان|فروج مشوي|بيتزا||مقالي|كبة عدس|مقلوبة بزاليا|روس|شاكرية|بطاطا بالفرن (دجاج)|مطبق|بطاطا وبزاليا|هوت دوغ|بيضنجان ع مرقة حمرا|سلطة بطاطا|فاصوليا بيضة|شاورما|شيخ المحشي|كبسة سمك|بامية|لحمة بعجين|بطاطا وبيض|كوردون بلو|فاصوليا خضرا|برغر|لحمة أو بطاطا بالصينية|بط مشوي|فول مدمس او فلافل|كبسة دجاج"],
+"2027-02":[1,"تسقية|فاهيتا||مفركة بطاطا|مقلوبة فول|شيشبرك|بيتزا|كبة مقلية|معكرونة|مقلوبة بزاليا|محاشي|مشاوي وجناحات|بطاطا بالفرن (دجاج)|سبانخ|رز مع خضرا|هوت دوغ|ورق عنب|سلطة بطاطا|ملوخية|شاورما|بطاطا بالفرن (سمك)|كبسة سمك|سمبوسك|مجدرة|بطاطا وبيض|محمرة|برغر|قارن يارق"],
+"2027-03":[1,"فريكة|لحمة أو بطاطا بالصينية|محمرة|فول مدمس او فلافل|كبة بطاطا||كبسة دجاج|تسقية|فاهيتا|مفركة بطاطا|مقلوبة فول|بطاطا بالفرن (سمك)|بيتزا||كبة مقلية|معكرونة|مقلوبة بزاليا|محاشي|مشاوي وجناحات|بطاطا بالفرن (دجاج)|سبانخ|رز مع خضرا|هوت دوغ|ملوخية|سلطة بطاطا|سمبوسك|شاورما|بط مشوي|كبسة سمك|ورق عنب|مجدرة"],
+"2027-04":[1,"بطاطا وبيض|ملظوم|فريكة|برغر|قارن يارق||شيشبرك|لحمة أو بطاطا بالصينية|بيضنجان مشوي مع شوربة|ثرود دجاج|كبسة دجاج|كتف مشوي|كبدة وقلوبات|مفركة بطاطا|مقلوبة بيضنجان|فروج مشوي|بيتزا|مقالي|كبة عدس|مقلوبة بزاليا|روس|شاكرية|بطاطا بالفرن (دجاج)|مطبق|بطاطا وبزاليا|هوت دوغ||بيضنجان ع مرقة حمرا|سلطة بطاطا|فاصوليا بيضة"],
+"2027-05":[1,"شاورما||كبسة سمك|بامية|لحمة بعجين|بطاطا وبيض|كوردون بلو||فاصوليا خضرا|برغر|لحمة أو بطاطا بالصينية|بط مشوي|فول مدمس او فلافل|كبسة دجاج|تسقية|فاهيتا|مفركة بطاطا|مقلوبة فول|شيشبرك|بيتزا|كبة مقلية|معكرونة|مقلوبة بزاليا|محاشي|مشاوي وجناحات|بطاطا بالفرن (دجاج)|سبانخ|رز مع خضرا|هوت دوغ|ورق عنب|سلطة بطاطا"],
+"2027-06":[1,"ملوخية|شاورما|بطاطا بالفرن (سمك)|كبسة سمك|سمبوسك|مجدرة||بطاطا وبيض|محمرة|برغر|قارن يارق|فريكة|لحمة أو بطاطا بالصينية|محمرة|فول مدمس او فلافل|كبة بطاطا|كبسة دجاج|تسقية|فاهيتا|مفركة بطاطا|مقلوبة فول|بطاطا بالفرن (سمك)|بيتزا|كبة مقلية|معكرونة|مقلوبة بزاليا|محاشي|مشاوي وجناحات|بطاطا بالفرن (دجاج)|"],
+"2027-07":[1,"سبانخ|رز مع خضرا|هوت دوغ|ملوخية|سلطة بطاطا|سمبوسك|شاورما||بط مشوي||كبسة سمك|ورق عنب|مجدرة|بطاطا وبيض|ملظوم|فريكة|برغر|قارن يارق|شيشبرك|لحمة أو بطاطا بالصينية|بيضنجان مشوي مع شوربة|ثرود دجاج|كبسة دجاج|كتف مشوي|كبدة وقلوبات|مفركة بطاطا|مقلوبة بيضنجان|فروج مشوي|بيتزا|مقالي|كبة عدس"],
+"2027-08":[1,"مقلوبة بزاليا|روس|شاكرية|بطاطا بالفرن (دجاج)|مطبق|بطاطا وبزاليا|هوت دوغ|بيضنجان ع مرقة حمرا|سلطة بطاطا||فاصوليا بيضة|شاورما|شيخ المحشي|كبسة سمك|بامية|لحمة بعجين|بطاطا وبيض|كوردون بلو|فاصوليا خضرا|برغر|لحمة أو بطاطا بالصينية|بط مشوي|فول مدمس او فلافل|كبسة دجاج|تسقية|فاهيتا||مفركة بطاطا|مقلوبة فول|شيشبرك|بيتزا"],
+"2027-09":[1,"كبة مقلية|معكرونة|مقلوبة بزاليا|محاشي|مشاوي وجناحات|بطاطا بالفرن (دجاج)|سبانخ|رز مع خضرا|هوت دوغ||ورق عنب|سلطة بطاطا|ملوخية|شاورما|بطاطا بالفرن (سمك)|كبسة سمك|سمبوسك|مجدرة|بطاطا وبيض|محمرة|برغر|قارن يارق|فريكة|لحمة أو بطاطا بالصينية|محمرة|فول مدمس او فلافل|كبة بطاطا|كبسة دجاج|تسقية|فاهيتا"],
+"2027-10":[1,"مفركة بطاطا|مقلوبة فول|بطاطا بالفرن (سمك)|بيتزا|كبة مقلية|معكرونة|مقلوبة بزاليا|محاشي|مشاوي وجناحات|بطاطا بالفرن (دجاج)||سبانخ|رز مع خضرا|هوت دوغ|ملوخية|سلطة بطاطا|سمبوسك|شاورما|بط مشوي|كبسة سمك|ورق عنب|مجدرة|بطاطا وبيض|ملظوم|فريكة|برغر|قارن يارق|شيشبرك|لحمة أو بطاطا بالصينية|بيضنجان مشوي مع شوربة|ثرود دجاج"],
+"2027-11":[1,"كبسة دجاج|كتف مشوي|كبدة وقلوبات|مفركة بطاطا|مقلوبة بيضنجان|فروج مشوي|بيتزا|مقالي|كبة عدس||مقلوبة بزاليا|روس|شاكرية|بطاطا بالفرن (دجاج)|مطبق|بطاطا وبزاليا|هوت دوغ|بيضنجان ع مرقة حمرا|سلطة بطاطا|فاصوليا بيضة|شاورما||كبسة سمك|بامية|لحمة بعجين|بطاطا وبيض|كوردون بلو|فاصوليا خضرا|برغر|لحمة أو بطاطا بالصينية"],
+"2027-12":[1,"بط مشوي|فول مدمس او فلافل|كبسة دجاج|تسقية|فاهيتا|مفركة بطاطا|مقلوبة فول|شيشبرك|بيتزا|كبة مقلية||معكرونة|مقلوبة بزاليا|محاشي|مشاوي وجناحات|بطاطا بالفرن (دجاج)|سبانخ|رز مع خضرا|هوت دوغ|ورق عنب|سلطة بطاطا|ملوخية|شاورما|بطاطا بالفرن (سمك)|كبسة سمك|سمبوسك|مجدرة|بطاطا وبيض|محمرة|برغر|قارن يارق"],
+"2028-01":[1,"فريكة"]
+};
+
+/* ---------- Helpers ---------- */
+const pad = n => String(n).padStart(2,"0");
+const key = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parseKey = k => { const [y,m,d]=k.split("-").map(Number); return new Date(y,m-1,d); };
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const longDate = d => DAYS[d.getDay()]+", "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear();
+const $ = id => document.getElementById(id);
+
+const ORIGINAL = {};
+for (const [ym,[start,str]] of Object.entries(PLAN)) {
+  const [y,m]=ym.split("-").map(Number);
+  str.split("|").forEach((meal,i)=>{ ORIGINAL[key(new Date(y,m-1,start+i))]=meal.trim(); });
+}
+const PLAN_KEYS = Object.keys(ORIGINAL).sort();
+
+/* ---------- Storage (edits only) ---------- */
+const STORE="mealCalendarEdits.v1";
+let edits = {};
+try { edits = JSON.parse(localStorage.getItem(STORE)||"{}") || {}; } catch(e){ edits = {}; }
+function persist(){ try{ localStorage.setItem(STORE, JSON.stringify(edits)); }catch(e){ toast("Could not save in this browser"); } }
+const getMeal = k => (k in edits) ? edits[k] : (ORIGINAL[k]||"");
+function setMeal(k,text){
+  text=(text||"").trim();
+  if ((ORIGINAL[k]||"")===text) delete edits[k]; else edits[k]=text;
+  persist();
+}
+
+/* ---------- Render ---------- */
+let view = new Date(); view.setDate(1);
+let selected = key(new Date());
+
+function render(){
+  const todayKey=key(new Date());
+  $("monthTitle").textContent = MONTHS[view.getMonth()]+" "+view.getFullYear();
+  const first = new Date(view.getFullYear(), view.getMonth(), 1);
+  const startOffset = first.getDay();
+  const grid=$("grid"); grid.innerHTML="";
+  const total = Math.ceil((startOffset + new Date(view.getFullYear(), view.getMonth()+1,0).getDate())/7)*7;
+  for(let i=0;i<total;i++){
+    const d=new Date(view.getFullYear(), view.getMonth(), 1-startOffset+i);
+    const k=key(d), meal=getMeal(k);
+    const b=document.createElement("button");
+    b.className="cell"+(d.getMonth()!==view.getMonth()?" out":"")+(k===todayKey?" is-today":"")+((k in edits)?" edited":"")+(meal?"":" free");
+    b.innerHTML='<span class="n"><span>'+d.getDate()+'</span></span><span class="t" dir="auto"></span>';
+    b.querySelector(".t").textContent = meal;
+    b.setAttribute("aria-label", longDate(d)+": "+(meal||"no meal"));
+    b.onclick=()=>openDay(k);
+    grid.appendChild(b);
+  }
+  const t=new Date();
+  $("todayDate").textContent="Today · "+longDate(t);
+  const m=getMeal(key(t)), el=$("todayMeal");
+  el.textContent = m || "No meal planned";
+  el.classList.toggle("empty",!m);
+}
+$("dows").innerHTML = DAYS.map(d=>'<div class="dow">'+d.slice(0,3)+'</div>').join("");
+
+$("prev").onclick=()=>{view.setMonth(view.getMonth()-1);render()};
+$("next").onclick=()=>{view.setMonth(view.getMonth()+1);render()};
+$("goToday").onclick=()=>{view=new Date();view.setDate(1);render()};
+
+/* ---------- Day dialog ---------- */
+function openDay(k){
+  selected=k;
+  $("dayTitle").textContent=longDate(parseKey(k));
+  $("dayText").value=getMeal(k);
+  $("dayRestore").style.display = (k in edits) ? "" : "none";
+  $("dayDlg").showModal();
+  $("dayText").focus();
+}
+$("daySave").onclick=()=>{setMeal(selected,$("dayText").value);$("dayDlg").close();render();toast("Saved")};
+$("dayClose").onclick=()=>$("dayDlg").close();
+$("dayRestore").onclick=()=>{delete edits[selected];persist();$("dayDlg").close();render();toast("Original restored")};
+$("dayShare").onclick=()=>shareDay(selected, $("dayText").value.trim());
+$("dayPick").onclick=()=>{setMeal(selected,$("dayText").value);$("dayDlg").close();openPicker(selected)};
+$("todayEdit").onclick=()=>openDay(key(new Date()));
+$("todayChange").onclick=()=>openPicker(key(new Date()));
+$("todayShare").onclick=()=>shareDay(key(new Date()));
+
+/* ---------- Picker ---------- */
+let pickTarget=null;
+function openPicker(k){
+  pickTarget=k;
+  $("pickTitle").textContent="Choose a meal for "+longDate(parseKey(k));
+  $("pickSearch").value="";
+  drawPicker();
+  $("pickDlg").showModal();
+}
+function drawPicker(){
+  const q=$("pickSearch").value.trim().toLowerCase();
+  const list=$("pickList"); list.innerHTML="";
+  let n=0;
+  for(const k of PLAN_KEYS){
+    const meal=getMeal(k);
+    if(!meal || k===pickTarget) continue;
+    const d=parseKey(k);
+    const label=d.getDate()+" "+MONTHS[d.getMonth()].slice(0,3)+" "+d.getFullYear()+" · "+DAYS[d.getDay()].slice(0,3);
+    if(q && !(meal.toLowerCase().includes(q) || label.toLowerCase().includes(q))) continue;
+    const b=document.createElement("button");
+    b.innerHTML='<span dir="auto"></span><span></span>';
+    b.children[0].textContent=meal; b.children[1].textContent=label;
+    b.onclick=()=>applyPick(k);
+    list.appendChild(b); n++;
+  }
+  if(!n) list.innerHTML='<div style="padding:12px;color:var(--muted)">No matching meals</div>';
+}
+$("pickSearch").oninput=drawPicker;
+$("pickClose").onclick=()=>$("pickDlg").close();
+function applyPick(fromKey){
+  const mode=document.querySelector('input[name="mode"]:checked').value;
+  const a=getMeal(pickTarget), b=getMeal(fromKey);
+  setMeal(pickTarget,b);
+  if(mode==="swap") setMeal(fromKey,a);
+  $("pickDlg").close(); render();
+  toast(mode==="swap"?"Days swapped":"Meal updated");
+}
+
+/* ---------- WhatsApp ---------- */
+function openWA(text){ window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener"); }
+function pageUrl(){ return location.href.split("#")[0]; }
+function shareDay(k, override){
+  const d=parseKey(k), meal=(override!==undefined?override:getMeal(k))||"Free day";
+  openWA("🍽️ "+longDate(d)+"\n"+meal+"\n\n"+pageUrl());
+}
+$("shareWeek").onclick=()=>{
+  const base=parseKey(selected===key(new Date())?key(new Date()):selected);
+  let lines=["🍽️ Meals for the next 7 days",""];
+  for(let i=0;i<7;i++){
+    const d=new Date(base.getFullYear(),base.getMonth(),base.getDate()+i);
+    lines.push(DAYS[d.getDay()].slice(0,3)+" "+d.getDate()+"/"+(d.getMonth()+1)+": "+(getMeal(key(d))||"Free day"));
+  }
+  lines.push("",pageUrl());
+  openWA(lines.join("\n"));
+};
+
+/* ---------- Backup ---------- */
+$("exportBtn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(edits,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="meal-calendar-backup-"+key(new Date())+".json"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+$("importBtn").onclick=()=>$("importFile").click();
+$("importFile").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const o=JSON.parse(r.result); if(typeof o!=="object"||Array.isArray(o)) throw 0; edits=o; persist(); render(); toast("Backup restored"); }catch(x){ toast("That file is not a valid backup"); } };
+  r.readAsText(f); e.target.value="";
+};
+$("resetAll").onclick=()=>{ if(confirm("Remove all your edits and go back to the original plan?")){ edits={}; persist(); render(); toast("Reset done"); } };
+
+/* ---------- Toast ---------- */
+let tt;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2000); }
+
+render();
+</script>
+</body>
+</html>
