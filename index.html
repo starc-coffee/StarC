@@ -1161,9 +1161,18 @@ function mgmtLogout() { if (window.STARC) STARC.logout(); applyRole(null); }
         function handleContact(e) {
             e.preventDefault();
             const status = document.getElementById('contactStatus');
+            const name = document.getElementById('cName').value.trim();
+            const email = document.getElementById('cEmail').value.trim();
+            const message = document.getElementById('cMessage').value.trim();
+            const text = 'New message - StarC Cafe website\nName: ' + name + '\nEmail: ' + email + '\nMessage: ' + message;
+            // opened directly inside the submit click so phones do not block it (same WhatsApp number as bookings)
+            window.open('https://wa.me/' + BOOKING_WHATSAPP + '?text=' + encodeURIComponent(text), '_blank', 'noopener');
             status.style.color = 'var(--gold-primary)';
-            status.textContent = 'Message sent successfully!';
-            setTimeout(closeContact, 2000);
+            status.textContent = (document.documentElement.lang === 'ar')
+                ? 'تم فتح واتساب، اضغط إرسال لإيصال رسالتك'
+                : 'WhatsApp opened - press Send to deliver your message';
+            document.getElementById('contactForm').reset();
+            setTimeout(closeContact, 4000);
         }
 
         async function handleStamp(e) {
