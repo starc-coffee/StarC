@@ -1,5 +1,6 @@
 // StarC Cafe – file storage API (Cloudflare Worker + R2)
-// Routes (all need the header  Authorization: Bearer <FILES_PASSWORD>):
+// The manager login is checked in worker.js BEFORE this function is called.
+// Routes:
 //   GET    /api/files              -> list files
 //   GET    /api/files?key=...      -> download one file
 //   PUT    /api/files?name=...     -> upload one file (raw body)
@@ -13,18 +14,6 @@ function json(data, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
-}
-
-async function sha256(text) {
-  return new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
-}
-
-async function passwordOk(given, expected) {
-  const a = await sha256(given);
-  const b = await sha256(expected);
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
-  return diff === 0;
 }
 
 function cleanName(raw) {
@@ -46,12 +35,6 @@ function validKey(key) {
 
 export async function handleFiles(request, env) {
   if (!env.FILES) return json({ error: 'File storage is not set up yet (missing FILES binding).' }, 500);
-  if (!env.FILES_PASSWORD) return json({ error: 'Files password is not set (FILES_PASSWORD).' }, 500);
-
-  const bearer = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
-  if (!(await passwordOk(bearer, env.FILES_PASSWORD))) {
-    return json({ error: 'Wrong password' }, 401);
-  }
 
   const url = new URL(request.url);
   const key = url.searchParams.get('key');

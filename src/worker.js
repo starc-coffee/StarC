@@ -3,11 +3,13 @@
  * Receives invoices from the billing page, stores them in the D1 table "records",
  * and checks the manager / employee passwords on the server.
  *
- * Also stores discount coupons (D1 table "coupons", actions coupon_create (1-20 at once) / coupon_list / coupon_get / coupon_redeem / coupon_reactivate / coupon_delete).
+ * Also stores discount coupons (D1 table "coupons", actions coupon_create (1-20 at once) / coupon_list / coupon_get / coupon_redeem).
  *
  * Secrets to set in Cloudflare (Worker > Settings > Variables and secrets):
  *   MANAGER_PASSWORD   EMPLOYEE_PASSWORD
  */
+import { handleFiles } from './files.js';
+
 const TOKEN_HOURS = 12;
 const COUPON_TZ = 'UTC';   // <- your cafe time zone, e.g. 'Asia/Beirut'. A coupon is valid through the end of its last day in this zone.
 const enc = new TextEncoder();
@@ -317,15 +319,6 @@ async function coupons(env, action, req, role) {
       .bind(Date.now(), 'coupon_reactivate', JSON.stringify({ code, holder: before.holder, percent: before.percent, usedAt: before.used_at, usedBy: before.used_by })).run();
     return { ok: true, coupon: couponView(await row()) };
   }
-  if (action === 'coupon_delete') {                          // manager only: delete a coupon permanently (used or not)
-    if (role !== 'manager') return { ok: false, error: 'manager only' };
-    const before = await row();
-    if (!before) return { ok: false, error: 'not found' };
-    await db.prepare('DELETE FROM coupons WHERE code = ?').bind(code).run();
-    await db.prepare('INSERT INTO acct_audit (t, action, detail) VALUES (?, ?, ?)')
-      .bind(Date.now(), 'coupon_delete', JSON.stringify({ code, holder: before.holder, percent: before.percent, validUntil: before.valid_until, usedAt: before.used_at, usedBy: before.used_by })).run();
-    return { ok: true };
-  }
   return { ok: false, error: 'unknown action' };
 }
 
@@ -333,12 +326,23 @@ async function coupons(env, action, req, role) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === '/api/files') {                    // file upload / download: manager only
+      try {
+        await init(env.DB);
+        const fmeta = await metaAll(env.DB);
+        const fenv = { ...env, MANAGER_PASSWORD: env.MANAGER_PASSWORD || fmeta.manager_password || '',
+                               EMPLOYEE_PASSWORD: env.EMPLOYEE_PASSWORD || fmeta.employee_password || '' };
+        const ftoken = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+        const frole = await verify(fenv, await getSecret(env.DB, fmeta), ftoken);
+        if (frole !== 'manager') return json({ ok: false, error: 'Manager login required' }, 401);
+        return await handleFiles(request, env);
+      } catch (err) {
+        return json({ ok: false, error: 'server: ' + String(err && err.message || err) }, 500);
+      }
+    }
     if (url.pathname !== '/api/sync') {
       return url.pathname.startsWith('/api/') ? json({ ok: false, error: 'not found' }, 404) : env.ASSETS.fetch(request);
     }
-    import { handleFiles } from './files.js';
-// ...
-if (url.pathname === '/api/files') return handleFiles(request, env);
     if (request.method !== 'GET' && request.method !== 'POST') return json({ ok: false, error: 'method not allowed' }, 405);
     try {
       await init(env.DB);
