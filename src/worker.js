@@ -336,6 +336,9 @@ export default {
     if (url.pathname !== '/api/sync') {
       return url.pathname.startsWith('/api/') ? json({ ok: false, error: 'not found' }, 404) : env.ASSETS.fetch(request);
     }
+    import { handleFiles } from './files.js';
+// ...
+if (url.pathname === '/api/files') return handleFiles(request, env);
     if (request.method !== 'GET' && request.method !== 'POST') return json({ ok: false, error: 'method not allowed' }, 405);
     try {
       await init(env.DB);
