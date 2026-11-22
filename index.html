@@ -571,7 +571,6 @@
 	<button class="action-btn" onclick="openManagement()" id="managementBtn">Management</button>
         <button class="action-btn" onclick="openBooking()" id="bookingBtn">Book a Table</button>
         <button class="action-btn" onclick="openContact()" id="contactBtn">Contact Us</button>
-        <button class="action-btn" onclick="openStampModal()" id="stampModalBtn">☕ Add Stamp</button>
         <button class="action-btn" onclick="toggleTheme()" id="themeBtn">
             <span>◐</span> <span id="themeBtnText">Light Theme</span>
         </button>
@@ -947,13 +946,14 @@
         </form>
         <div id="mgmtStatus" class="status-msg"></div>
 
-        <!-- The buttons: hidden until logged in. Manager password = all 3, Employee password = Invoice + Employee -->
+        <!-- The buttons: hidden until logged in. Manager password = all buttons, Employee password = Invoice + Employee + Add Stamp -->
         <div id="mgmtMenu" style="display:none">
             <div class="management-menu">
                 <!-- Put each link in data-link="" when you have it -->
                 <button class="submit-btn" id="invoiceBtn" data-link="/Accounting/starc-billing.html" onclick="goToLink(this)">Invoice</button>
                 <button class="submit-btn" id="managerBtn" data-link="/managementAccount/" onclick="goToLink(this)">Manager</button>
                 <button class="submit-btn" id="employeeBtn" data-link="" onclick="goToLink(this)">Employee</button>
+                <button class="submit-btn" id="stampModalBtn" onclick="closeManagement(); openStampModal()">☕ Add Stamp</button>
             </div>
             <button type="button" class="submit-btn" id="mgmtLockBtn" onclick="mgmtLogout()">Lock</button>
         </div>
@@ -1068,8 +1068,8 @@ function goToLink(btn) {
 }
 
 // ===== Management login (the password is checked on the server; see starc-auth.js) =====
-// Manager password  -> Invoice + Manager + Employee buttons
-// Employee password -> Invoice + Employee buttons only
+// Manager password  -> Invoice + Manager + Employee + Add Stamp buttons
+// Employee password -> Invoice + Employee + Add Stamp buttons only
 const MGMT_TXT = {
   en: { pw:'Password', enter:'Enter', lock:'Lock', wrong:'Wrong password.', locked:'Too many wrong tries. Wait 15 minutes.',
         network:'Could not reach the server. Check the internet connection.', config:'Not set up yet.' },
