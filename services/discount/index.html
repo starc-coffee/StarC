@@ -40,7 +40,7 @@ $("#rs").onclick=defaults;
 function fail(e){$("#cerr").textContent=DC.errText(e);if(e.kind==="auth")gateLock()}
 async function load(){
   try{var r=await DC.api({action:"coupon_list"});
-    $("#ls").innerHTML=r.coupons.length?r.coupons.map(function(c){return '<div class="li"><div><b>'+DC.esc(c.holder)+'</b><br><span class="note">'+(c.amount>0?c.amount+' · '+DC.esc(c.title||''):c.percent+'%')+' · '+c.validUntil+' · <span class="code">'+c.code+'</span></span></div><span class="chip '+c.status+'">'+DC.status[c.status]+'</span>'+(c.status==="used"?'<button class="btn ghost" data-r="'+c.code+'">Reactivate · إعادة تفعيل</button>':'')+'</div>'}).join(""):'<p class="note">No coupons yet · لا توجد قسائم بعد</p>'}
+    $("#ls").innerHTML=r.coupons.length?r.coupons.map(function(c){return '<div class="li"><div><b>'+DC.esc(c.holder)+'</b><br><span class="note">'+(c.amount>0?c.amount+' · '+DC.esc(c.title||''):c.percent+'%')+' · '+c.validUntil+' · <span class="code">'+c.code+'</span></span></div><span class="chip '+c.status+'">'+DC.status[c.status]+'</span>'+(c.status==="used"?'<button class="btn ghost" data-r="'+c.code+'">Reactivate · إعادة تفعيل</button>':'')+'<button class="btn ghost" data-x="'+c.code+'">Delete · حذف</button></div>'}).join(""):'<p class="note">No coupons yet · لا توجد قسائم بعد</p>'}
   catch(e){$("#ls").innerHTML='<p class="err">'+DC.errText(e)+'</p>';if(e.kind==="auth")gateLock()}}
 function dl(i){var cv=document.getElementById("cv"+i);cv.toBlob(function(b){var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="starc-coupon-"+made[i].code+".png";a.click()})}
 function showCards(opts){
@@ -66,6 +66,11 @@ document.addEventListener("click",async function(e){var c=e.target.getAttribute&
   if(!confirm("Reactivate this coupon so it can be used again?\nإعادة تفعيل هذه القسيمة لتُستخدم مرة أخرى؟"))return;
   e.target.disabled=true;
   try{var r=await DC.api({action:"coupon_reactivate",code:c});if(r.coupon.status==="expired")alert("Reactivated, but its validity date has passed. Create a new coupon if it should be usable.\nتمت إعادة التفعيل لكن تاريخ الصلاحية انتهى. أنشئ قسيمة جديدة إن لزم.");load()}
+  catch(x){alert(DC.errText(x));if(x.kind==="auth")gateLock();else load()}});
+document.addEventListener("click",async function(e){var c=e.target.getAttribute&&e.target.getAttribute("data-x");if(!c)return;
+  if(!confirm("Delete this coupon permanently, even if it is not used?\nحذف هذه القسيمة نهائياً حتى لو لم تُستخدم؟"))return;
+  e.target.disabled=true;
+  try{await DC.api({action:"coupon_delete",code:c});load()}
   catch(x){alert(DC.errText(x));if(x.kind==="auth")gateLock();else load()}});
 StarcGate('manager',start);
 </script></body></html>
