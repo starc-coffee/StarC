@@ -8,8 +8,6 @@
  * Secrets to set in Cloudflare (Worker > Settings > Variables and secrets):
  *   MANAGER_PASSWORD   EMPLOYEE_PASSWORD
  */
-import { handleFiles } from './files.js';
-
 const TOKEN_HOURS = 12;
 const COUPON_TZ = 'UTC';   // <- your cafe time zone, e.g. 'Asia/Beirut'. A coupon is valid through the end of its last day in this zone.
 const enc = new TextEncoder();
@@ -51,8 +49,12 @@ async function init(db) {
     db.prepare(`CREATE TABLE IF NOT EXISTS coupons (
       code TEXT PRIMARY KEY, percent INTEGER NOT NULL, holder TEXT NOT NULL, valid_until TEXT NOT NULL,
       created_at TEXT NOT NULL, created_by TEXT, used_at TEXT, used_by TEXT)`),
-    db.prepare('CREATE INDEX IF NOT EXISTS idx_coupons_created ON coupons (created_at)')
+    db.prepare('CREATE INDEX IF NOT EXISTS idx_coupons_created ON coupons (created_at)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS stamps (phone TEXT PRIMARY KEY, count INTEGER NOT NULL DEFAULT 0, total INTEGER NOT NULL DEFAULT 0, updated TEXT)')
   ]);
+  // fixed-amount coupons (loyalty): older databases get the two new columns once; "duplicate column" errors are ignored
+  for (const col of ['amount INTEGER NOT NULL DEFAULT 0', "title TEXT NOT NULL DEFAULT ''"])
+    try { await db.prepare('ALTER TABLE coupons ADD COLUMN ' + col).run(); } catch (e) { /* already there */ }
   ready = true;
 }
 async function metaAll(db) {
@@ -264,7 +266,7 @@ const COUPON_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const couponToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: COUPON_TZ }).format(new Date());   // YYYY-MM-DD
 const couponCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
 const couponView = r => ({
-  code: r.code, percent: r.percent, holder: r.holder, validUntil: r.valid_until, createdAt: r.created_at,
+  code: r.code, percent: r.percent, amount: r.amount || 0, title: r.title || '', holder: r.holder, validUntil: r.valid_until, createdAt: r.created_at,
   usedAt: r.used_at || '', usedBy: r.used_by || '',
   status: r.used_at ? 'used' : (couponToday() > r.valid_until ? 'expired' : 'valid')
 });
@@ -322,24 +324,47 @@ async function coupons(env, action, req, role) {
   return { ok: false, error: 'unknown action' };
 }
 
+/* ---------- loyalty stamps (manager or employee) ---------- */
+// 4th stamp = free cup: a fixed-amount coupon named "5 cup coupon" is saved in the coupons table and the card starts again.
+const STAMPS_FOR_CUP = 4, LOYALTY_COUPON_AMOUNT = 250, LOYALTY_COUPON_TITLE = '5 cup coupon', LOYALTY_VALID_DAYS = 90;
+function normPhone(v) {                                   // 09xx xxx xxx -> 9639xxxxxxxx ; +/00 numbers kept as international
+  let d = String(v || '').replace(/\D/g, '');
+  if (d.startsWith('00')) d = d.slice(2);
+  else if (d.length === 10 && d[0] === '0') d = '963' + d.slice(1);
+  else if (d.length === 9 && d[0] === '9') d = '963' + d;
+  return d.length >= 10 && d.length <= 15 ? d : '';
+}
+async function stampAdd(env, req, role) {
+  const db = env.DB, phone = normPhone(req.phone), opId = str(req.opId, 64);
+  if (!phone) return { ok: false, error: 'phone' };
+  if (!opId) return { ok: false, error: 'opId required' };
+  if (await db.prepare('SELECT 1 AS x FROM ops WHERE op_id = ?').bind(opId).first()) return { ok: true, dup: true, phone };
+  const now = new Date().toISOString();
+  const res = await db.batch([
+    db.prepare('INSERT INTO ops (op_id, t) VALUES (?, ?)').bind(opId, Date.now()),
+    db.prepare('INSERT INTO stamps (phone, count, total, updated) VALUES (?1, 1, 1, ?2) ON CONFLICT(phone) DO UPDATE SET count = count + 1, total = total + 1, updated = ?2 RETURNING count').bind(phone, now)
+  ]);
+  const count = res[1].results[0].count;
+  if (count < STAMPS_FOR_CUP) return { ok: true, phone, count, remaining: STAMPS_FOR_CUP - count };
+  const until = new Intl.DateTimeFormat('en-CA', { timeZone: COUPON_TZ }).format(new Date(Date.now() + LOYALTY_VALID_DAYS * 86400000));
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = Array.from(crypto.getRandomValues(new Uint8Array(10)), x => COUPON_ALPHABET[x % COUPON_ALPHABET.length]).join('');
+    try {
+      await db.batch([
+        db.prepare('INSERT INTO coupons (code, percent, amount, title, holder, valid_until, created_at, created_by) VALUES (?, 0, ?, ?, ?, ?, ?, ?)')
+          .bind(code, LOYALTY_COUPON_AMOUNT, LOYALTY_COUPON_TITLE, phone, until, now, role),
+        db.prepare('UPDATE stamps SET count = count - ?, updated = ? WHERE phone = ?').bind(STAMPS_FOR_CUP, now, phone)
+      ]);
+      return { ok: true, phone, count: STAMPS_FOR_CUP, remaining: 0, coupon: { code, amount: LOYALTY_COUPON_AMOUNT, title: LOYALTY_COUPON_TITLE, validUntil: until } };
+    } catch (e) { /* code already exists: try another */ }
+  }
+  return { ok: false, error: 'could not create' };
+}
+
 /* ---------- entry point ---------- */
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname === '/api/files') {                    // file upload / download: manager only
-      try {
-        await init(env.DB);
-        const fmeta = await metaAll(env.DB);
-        const fenv = { ...env, MANAGER_PASSWORD: env.MANAGER_PASSWORD || fmeta.manager_password || '',
-                               EMPLOYEE_PASSWORD: env.EMPLOYEE_PASSWORD || fmeta.employee_password || '' };
-        const ftoken = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
-        const frole = await verify(fenv, await getSecret(env.DB, fmeta), ftoken);
-        if (frole !== 'manager') return json({ ok: false, error: 'Manager login required' }, 401);
-        return await handleFiles(request, env);
-      } catch (err) {
-        return json({ ok: false, error: 'server: ' + String(err && err.message || err) }, 500);
-      }
-    }
     if (url.pathname !== '/api/sync') {
       return url.pathname.startsWith('/api/') ? json({ ok: false, error: 'not found' }, 404) : env.ASSETS.fetch(request);
     }
@@ -358,12 +383,17 @@ export default {
       let req; try { req = JSON.parse(text); } catch (e) { return json({ ok: false, error: 'invalid' }, 400); }
       const action = str(req.action, 20);
       if (action === 'login') return json(await login(env, request, req));
+      if (action === 'coupon_public') {                       // customer's coupon page: shows status only, no login needed
+        const r = await env.DB.prepare('SELECT * FROM coupons WHERE code = ?').bind(couponCode(req.code)).first();
+        return json(r ? { ok: true, coupon: { code: r.code, title: r.title || '', amount: r.amount || 0, percent: r.percent, validUntil: r.valid_until, status: couponView(r).status } } : { ok: false, error: 'not found' });
+      }
       const role = await verify(env, await getSecret(env.DB, meta), req.token);
       if (!role) return json({ ok: false, error: 'auth' });
       if (action.startsWith('acct_')) {                       // accounting data: manager only, enforced here on the server
         if (role !== 'manager') return json({ ok: false, error: 'manager only' });
         return json(await acct(env, action, req));
       }
+      if (action === 'stamp_add') return json(await stampAdd(env, req, role));
       if (action.startsWith('coupon_')) return json(await coupons(env, action, req, role));   // discount coupons
       return json(await handle(env, action, req, role, meta));
     } catch (err) {
