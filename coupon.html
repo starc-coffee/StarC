@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StarC Cafe - Free Coffee Coupon</title>
+<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#14110f;color:#f3e9d8;font-family:system-ui,sans-serif;text-align:center;padding:16px}
+.card{max-width:340px;width:100%;background:#1f1a16;border:1px solid #c9a24d;border-radius:16px;padding:24px}
+h1{color:#c9a24d;font-size:22px;margin:0 0 8px}#qr{background:#fff;padding:12px;border-radius:12px;display:inline-block;margin:16px 0}
+.code{font:700 20px monospace;letter-spacing:2px}.st{margin-top:10px;font-size:14px}</style></head>
+<body><div class="card"><h1>StarC Cafe</h1>
+<p>Congrats, our loyal customer!<br>You have a free of charge cup of coffee ☕</p>
+<p dir="rtl">مبروك يا عميلنا الوفي! لديك كوب قهوة مجاني ☕</p>
+<div id="qr"></div><div class="code" id="code"></div><div class="st" id="st"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(async function () {
+  var code = (new URLSearchParams(location.search).get('c') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  var st = document.getElementById('st');
+  if (!code) { st.textContent = 'Coupon not found / الكوبون غير موجود'; return; }
+  document.getElementById('code').textContent = code;
+  new QRCode(document.getElementById('qr'), { text: location.origin + '/services/discount/check.html?c=' + code, width: 200, height: 200 });
+  try {
+    var j = await (await fetch('/api/sync', { method: 'POST', body: JSON.stringify({ action: 'coupon_public', code: code }) })).json();
+    if (!j.ok) st.textContent = 'Coupon not found / الكوبون غير موجود';
+    else if (j.coupon.status === 'used') st.textContent = 'Already used / تم استخدامه';
+    else if (j.coupon.status === 'expired') st.textContent = 'Expired / منتهي الصلاحية';
+    else st.textContent = 'Valid until / صالح حتى ' + j.coupon.validUntil;
+  } catch (e) {}
+})();
+</script></body></html>
