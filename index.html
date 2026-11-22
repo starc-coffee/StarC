@@ -147,6 +147,9 @@
             margin-top: 5px;
         }
 
+        html[dir="rtl"] .logo-title { font-family: 'Cairo', 'Tajawal', sans-serif; font-weight: 700; font-size: 3.6rem; line-height: 1.2; }
+        html[dir="rtl"] .logo-subtitle { font-family: 'Cairo', 'Tajawal', sans-serif; letter-spacing: 0; text-transform: none; font-size: 1.5rem; }
+
         .hero-tagline {
             max-width: 700px;
             margin: 30px auto 0;
@@ -581,23 +584,27 @@
     <header>
         <div class="logo-container">
             <span class="logo-star">★</span>
-            <div class="logo-title">StarC</div>
-            <div class="logo-subtitle">Coffee</div>
+            <div class="logo-title" data-en="StarC" data-ar="ستار سي">StarC</div>
+            <div class="logo-subtitle" data-en="Cafe" data-ar="كافيه">Cafe</div>
         </div>
         
         <!-- Header Social Buttons -->
         <div class="header-socials">
             <a class="social-btn facebook" href="https://www.facebook.com/profile.php?id=61594368716399" target="_blank" rel="noopener" aria-label="Facebook">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h2.5V4.5H14C11.8 4.5 10 6.3 10 8.5V11H7.5v3.5H10V21h3.5v-6.5H16l.5-3.5h-3V8.7c0-.4.2-.7.5-.7z"/></svg>
-                <span>Facebook</span>
+                <span data-en="Facebook" data-ar="فيسبوك">Facebook</span>
             </a>
             <a class="social-btn instagram" href="https://www.instagram.com/starccafe.2026?utm_source=qr&stkn=MXV3aXA4aHQzZ2tqeA==" target="_blank" rel="noopener" aria-label="Instagram">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="0.6" fill="currentColor"/></svg>
-                <span>Instagram</span>
+                <span data-en="Instagram" data-ar="إنستغرام">Instagram</span>
             </a>
             <a class="social-btn tiktok" href="https://www.tiktok.com/@starc.cafe?_r=1&_t=ZG-99jH4IJuaSP" target="_blank" rel="noopener" aria-label="TikTok">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3.5v11a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 3.5c.3 2.4 1.9 4 4.5 4.3"/></svg>
-                <span>TikTok</span>
+                <span data-en="TikTok" data-ar="تيك توك">TikTok</span>
+            </a>
+            <a class="social-btn whatsapp" href="https://wa.me/963984609240" target="_blank" rel="noopener" aria-label="WhatsApp">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.3-4.2A8 8 0 1 1 8.3 18.8L4 20z"/><path d="M9.2 8.8c.4 2.4 2.6 4.6 5 5l1.1-1.2-1.7-.9-.8.7c-.9-.4-1.8-1.3-2.2-2.2l.7-.8-.9-1.7z"/></svg>
+                <span data-en="WhatsApp" data-ar="واتساب">WhatsApp</span>
             </a>
         </div>
 
@@ -867,30 +874,30 @@
     <div id="bookingModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeBooking()">&times;</span>
-            <h3 style="color: var(--gold-primary); font-family: var(--font-heading);">Book a Table</h3>
+            <h3 style="color: var(--gold-primary); font-family: var(--font-heading);" data-en="Book a Table" data-ar="حجز طاولة">Book a Table</h3>
             <form id="bookingForm" onsubmit="handleBooking(event)">
-                <label for="name">Name</label>
-                <input type="text" id="name" required placeholder="Your full name">
+                <label for="name" data-en="Name" data-ar="الاسم">Name</label>
+                <input type="text" id="name" required placeholder="Your full name" data-ph-en="Your full name" data-ph-ar="اسمك الكامل">
                 
-                <label for="phone">Phone Number</label>
-                <input type="tel" id="phone" required placeholder="Your phone number">
+                <label for="phone" data-en="Phone Number" data-ar="رقم الهاتف">Phone Number</label>
+                <input type="tel" id="phone" required placeholder="Your phone number" data-ph-en="Your phone number" data-ph-ar="رقم هاتفك">
                 
-                <label for="guests">Number of Guests</label>
+                <label for="guests" data-en="Number of Guests" data-ar="عدد الضيوف">Number of Guests</label>
                 <select id="guests">
-                    <option value="1">1 Person</option>
-                    <option value="2">2 People</option>
-                    <option value="3">3 People</option>
-                    <option value="4">4 People</option>
-                    <option value="5+">5+ People</option>
+                    <option value="1" data-en="1 Person" data-ar="شخص واحد">1 Person</option>
+                    <option value="2" data-en="2 People" data-ar="شخصان">2 People</option>
+                    <option value="3" data-en="3 People" data-ar="3 أشخاص">3 People</option>
+                    <option value="4" data-en="4 People" data-ar="4 أشخاص">4 People</option>
+                    <option value="5+" data-en="5+ People" data-ar="5 أشخاص أو أكثر">5+ People</option>
                 </select>
                 
-                <label for="bookingDate">Date</label>
+                <label for="bookingDate" data-en="Date" data-ar="التاريخ">Date</label>
                 <input type="date" id="bookingDate" required>
                 
-                <label for="time">Time</label>
+                <label for="time" data-en="Time" data-ar="الوقت">Time</label>
                 <input type="time" id="time" required>
                 
-                <button type="submit" class="submit-btn">Confirm Booking</button>
+                <button type="submit" class="submit-btn" data-en="Confirm Booking" data-ar="تأكيد الحجز">Confirm Booking</button>
             </form>
             <div id="bookingStatus" class="status-msg"></div>
         </div>
@@ -900,18 +907,18 @@
     <div id="contactModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeContact()">&times;</span>
-            <h3 style="color: var(--gold-primary); font-family: var(--font-heading);">Contact Us</h3>
+            <h3 style="color: var(--gold-primary); font-family: var(--font-heading);" data-en="Contact Us" data-ar="اتصل بنا">Contact Us</h3>
             <form id="contactForm" onsubmit="handleContact(event)">
-                <label for="cName">Name</label>
-                <input type="text" id="cName" required placeholder="Your name">
+                <label for="cName" data-en="Name" data-ar="الاسم">Name</label>
+                <input type="text" id="cName" required placeholder="Your name" data-ph-en="Your name" data-ph-ar="اسمك">
                 
-                <label for="cEmail">Email</label>
-                <input type="email" id="cEmail" required placeholder="Your email">
+                <label for="cEmail" data-en="Email (optional)" data-ar="البريد الإلكتروني (اختياري)">Email (optional)</label>
+                <input type="email" id="cEmail" placeholder="Your email, if you have one" data-ph-en="Your email, if you have one" data-ph-ar="بريدك الإلكتروني إن وجد">
                 
-                <label for="cMessage">Message</label>
-                <textarea id="cMessage" required placeholder="How can we help you?"></textarea>
+                <label for="cMessage" data-en="Message" data-ar="الرسالة">Message</label>
+                <textarea id="cMessage" required placeholder="How can we help you?" data-ph-en="How can we help you?" data-ph-ar="كيف يمكننا مساعدتك؟"></textarea>
                 
-                <button type="submit" class="submit-btn">Send Message</button>
+                <button type="submit" class="submit-btn" data-en="Send Message" data-ar="إرسال الرسالة">Send Message</button>
             </form>
             <div id="contactStatus" class="status-msg"></div>
         </div>
@@ -965,19 +972,19 @@
         <div class="social-links">
             <a class="social-btn facebook" href="https://www.facebook.com/profile.php?id=61594368716399" target="_blank" rel="noopener" aria-label="Facebook">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h2.5V4.5H14C11.8 4.5 10 6.3 10 8.5V11H7.5v3.5H10V21h3.5v-6.5H16l.5-3.5h-3V8.7c0-.4.2-.7.5-.7z"/></svg>
-                <span>Facebook</span>
+                <span data-en="Facebook" data-ar="فيسبوك">Facebook</span>
             </a>
             <a class="social-btn instagram" href="https://www.instagram.com/starccafe.2026?utm_source=qr&stkn=MXV3aXA4aHQzZ2tqeA==" target="_blank" rel="noopener" aria-label="Instagram">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="0.6" fill="currentColor"/></svg>
-                <span>Instagram</span>
+                <span data-en="Instagram" data-ar="إنستغرام">Instagram</span>
             </a>
             <a class="social-btn tiktok" href="https://www.tiktok.com/@starc.cafe?_r=1&_t=ZG-99jH4IJuaSP" target="_blank" rel="noopener" aria-label="TikTok">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3.5v11a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 3.5c.3 2.4 1.9 4 4.5 4.3"/></svg>
-                <span>TikTok</span>
+                <span data-en="TikTok" data-ar="تيك توك">TikTok</span>
             </a>
             <a class="social-btn whatsapp" href="https://wa.me/963984609240" target="_blank" rel="noopener" aria-label="WhatsApp">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.3-4.2A8 8 0 1 1 8.3 18.8L4 20z"/><path d="M9.2 8.8c.4 2.4 2.6 4.6 5 5l1.1-1.2-1.7-.9-.8.7c-.9-.4-1.8-1.3-2.2-2.2l.7-.8-.9-1.7z"/></svg>
-                <span>WhatsApp</span>
+                <span data-en="WhatsApp" data-ar="واتساب">WhatsApp</span>
             </a>
         </div>
         <p class="copyright" id="copyrightText">&copy; 2026 StarC Coffee. All rights reserved.</p>
@@ -990,16 +997,30 @@
     <script>
         // Decimal coordinates derived from: 33°29'16.6"N 36°21'09.2"E -> 33.487944, 36.352556
 
+        // Text of the theme button: shows the theme you will switch to, in the page language
+        function themeLabel() {
+            const ar = document.documentElement.getAttribute('dir') === 'rtl';
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark-espresso';
+            document.getElementById('themeBtnText').textContent = ar ? (dark ? 'المظهر الفاتح' : 'المظهر الداكن') : (dark ? 'Light Theme' : 'Dark Theme');
+        }
+        // Translates everything marked data-en / data-ar (and placeholders marked data-ph-en / data-ph-ar)
+        function applyLangText() {
+            const ar = document.documentElement.getAttribute('dir') === 'rtl';
+            document.querySelectorAll('[data-en]').forEach(el => { el.textContent = el.getAttribute(ar ? 'data-ar' : 'data-en'); });
+            document.querySelectorAll('[data-ph-en]').forEach(el => { el.placeholder = el.getAttribute(ar ? 'data-ph-ar' : 'data-ph-en'); });
+            themeLabel();
+        }
+
         // Theme Toggle (page loads in the dark theme by default)
         function toggleTheme() {
             const html = document.documentElement;
             const themeBtnText = document.getElementById('themeBtnText');
             if (html.getAttribute('data-theme') === 'dark-espresso') {
                 html.removeAttribute('data-theme');
-                themeBtnText.textContent = 'Dark Theme';
+                themeLabel();
             } else {
                 html.setAttribute('data-theme', 'dark-espresso');
-                themeBtnText.textContent = 'Light Theme';
+                themeLabel();
             }
         }
 
@@ -1056,6 +1077,7 @@
                 copyrightText.textContent = '\u00A9 2026 ستار سي كافيه. جميع الحقوق محفوظة';
             }
             refreshMgmtText();
+            applyLangText();
         }
 
         // Modals Control
@@ -1164,7 +1186,7 @@ function mgmtLogout() { if (window.STARC) STARC.logout(); applyRole(null); }
             const name = document.getElementById('cName').value.trim();
             const email = document.getElementById('cEmail').value.trim();
             const message = document.getElementById('cMessage').value.trim();
-            const text = 'New message - StarC Cafe website\nName: ' + name + '\nEmail: ' + email + '\nMessage: ' + message;
+            const text = 'New message - StarC Cafe website\nName: ' + name + (email ? '\nEmail: ' + email : '') + '\nMessage: ' + message;
             // opened directly inside the submit click so phones do not block it (same WhatsApp number as bookings)
             window.open('https://wa.me/' + BOOKING_WHATSAPP + '?text=' + encodeURIComponent(text), '_blank', 'noopener');
             status.style.color = 'var(--gold-primary)';
