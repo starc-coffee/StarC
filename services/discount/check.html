@@ -13,7 +13,7 @@ var $=function(s){return document.querySelector(s)},stream=null;
 function codeOf(s){var m=String(s).match(/[?&]c=([A-Za-z0-9]+)/);return (m?m[1]:String(s)).toUpperCase().replace(/[^A-Z0-9]/g,"")}
 function render(c,note){
   var h=(note?'<p class="note" style="color:var(--ok);font-weight:700">'+note+'</p>':'')+'<div class="st '+c.status+'">'+DC.status[c.status]+'</div>'+
-  '<div class="row"><span>Discount · الخصم</span><b>'+c.percent+'%</b></div>'+
+  '<div class="row"><span>Discount · الخصم</span><b>'+(c.amount>0?c.amount:c.percent+'%')+'</b></div>'+(c.title?'<div class="row"><span>Type · النوع</span><b>'+DC.esc(c.title)+'</b></div>':'')+
   '<div class="row"><span>Holder · الحامل</span><b>'+DC.esc(c.holder)+'</b></div>'+
   '<div class="row"><span>Valid until · صالحة حتى</span><b>'+DC.esc(c.validUntil)+'</b></div>';
   if(c.status==="used")h+='<div class="row"><span>Used on · تاريخ الاستخدام</span><b>'+new Date(c.usedAt).toLocaleString()+'</b></div>';
