@@ -67,6 +67,18 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .toast.show{opacity:1}
 .foot{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+.shop-add{display:flex;flex-wrap:wrap;gap:8px}
+.shop-add input{flex:1 1 180px}
+.shop-add select{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.mkt{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.mkt h4{margin:0;padding:8px 12px;background:var(--soft);font-size:15px;display:flex;justify-content:space-between}
+.mkt h4 span{color:var(--muted);font-weight:400}
+.item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
+.item input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.item .nm{flex:1;word-break:break-word}
+.item.done .nm{text-decoration:line-through;color:var(--muted)}
+.item .x{border:0;background:transparent;color:var(--warn);font-size:20px;padding:0 6px;line-height:1}
+.shop-empty{padding:14px;color:var(--muted);text-align:center}
 </style>
 </head>
 <body>
@@ -86,6 +98,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <button class="btn" id="next" aria-label="Next month">&#8250;</button>
   <button class="btn" id="goToday">Today</button>
   <h2 id="monthTitle"></h2>
+  <button class="btn" id="shopBtn">&#128722; Shopping list</button>
   <button class="btn wa" id="shareWeek">Share week</button>
 </div>
 
@@ -128,6 +141,24 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <input type="search" id="pickSearch" placeholder="Search meals or dates" dir="auto">
     <div class="list" id="pickList"></div>
     <div class="actions"><button class="btn" id="pickClose">Cancel</button></div>
+  </div>
+</dialog>
+
+<!-- Shopping dialog -->
+<dialog id="shopDlg">
+  <div class="dlg">
+    <h3>Shopping list</h3>
+    <div class="shop-add">
+      <input type="text" id="shopItem" dir="auto" placeholder="Item name" aria-label="Item name">
+      <select id="shopMarket" aria-label="Market"></select>
+      <button class="btn primary" id="shopAdd">Add item</button>
+    </div>
+    <div id="shopList" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div class="actions">
+      <button class="btn wa" id="shopShare">WhatsApp</button>
+      <button class="btn danger" id="shopClear">Remove checked</button>
+      <button class="btn" id="shopClose">Close</button>
+    </div>
   </div>
 </dialog>
 
@@ -308,6 +339,62 @@ $("resetAll").onclick=()=>{ if(confirm("Remove all your edits and go back to the
 /* ---------- Toast ---------- */
 let tt;
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2000); }
+
+/* ---------- Shopping list ---------- */
+const MARKETS=["Arabic","Turkish","Lidl","Aldi","DM","Action","Bauhaus","Sta market"];
+const SSTORE="mealShopping.v1";
+let shop=[];
+try{ shop=JSON.parse(localStorage.getItem(SSTORE)||"[]"); if(!Array.isArray(shop)) shop=[]; }catch(e){ shop=[]; }
+function saveShop(){ try{ localStorage.setItem(SSTORE,JSON.stringify(shop)); }catch(e){ toast("Could not save in this browser"); } }
+$("shopMarket").innerHTML=MARKETS.map(m=>'<option>'+m+'</option>').join("");
+function drawShop(){
+  const box=$("shopList"); box.innerHTML="";
+  let any=false;
+  MARKETS.forEach(m=>{
+    const items=shop.filter(i=>i.market===m);
+    if(!items.length) return;
+    any=true;
+    const sec=document.createElement("div"); sec.className="mkt";
+    const h=document.createElement("h4");
+    h.innerHTML='<b></b><span></span>';
+    h.children[0].textContent=m;
+    h.children[1].textContent=items.filter(i=>!i.done).length+"/"+items.length;
+    sec.appendChild(h);
+    items.forEach(it=>{
+      const row=document.createElement("div"); row.className="item"+(it.done?" done":"");
+      const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=it.done;
+      cb.setAttribute("aria-label",it.name);
+      cb.onchange=()=>{it.done=cb.checked;saveShop();drawShop()};
+      const nm=document.createElement("span"); nm.className="nm"; nm.dir="auto"; nm.textContent=it.name;
+      const x=document.createElement("button"); x.className="x"; x.textContent="\u00d7"; x.setAttribute("aria-label","Delete "+it.name);
+      x.onclick=()=>{shop=shop.filter(o=>o!==it);saveShop();drawShop()};
+      row.append(cb,nm,x); sec.appendChild(row);
+    });
+    box.appendChild(sec);
+  });
+  if(!any) box.innerHTML='<div class="shop-empty">Your list is empty</div>';
+}
+function addShop(){
+  const name=$("shopItem").value.trim();
+  if(!name){ $("shopItem").focus(); return; }
+  shop.push({name,market:$("shopMarket").value,done:false});
+  saveShop(); $("shopItem").value=""; drawShop(); $("shopItem").focus();
+}
+$("shopBtn").onclick=()=>{drawShop();$("shopDlg").showModal();$("shopItem").focus()};
+$("shopAdd").onclick=addShop;
+$("shopItem").onkeydown=e=>{ if(e.key==="Enter") addShop(); };
+$("shopClose").onclick=()=>$("shopDlg").close();
+$("shopClear").onclick=()=>{ shop=shop.filter(i=>!i.done); saveShop(); drawShop(); toast("Checked items removed"); };
+$("shopShare").onclick=()=>{
+  const lines=["\ud83d\uded2 Shopping list",""];
+  MARKETS.forEach(m=>{
+    const items=shop.filter(i=>i.market===m&&!i.done);
+    if(!items.length) return;
+    lines.push("*"+m+"*"); items.forEach(i=>lines.push("- "+i.name)); lines.push("");
+  });
+  if(lines.length===2){ toast("Nothing to share"); return; }
+  openWA(lines.join("\n").trim());
+};
 
 render();
 </script>
