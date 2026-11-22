@@ -311,6 +311,17 @@ async function coupons(env, action, req, role) {
     if (res.meta && res.meta.changes >= 1) return { ok: true, coupon: couponView(r) };
     return { ok: false, error: couponView(r).status, coupon: couponView(r) };      // 'used' or 'expired'
   }
+  if (action === 'coupon_delete') {                          // manager only: remove a coupon completely (used or not), logged in the audit table
+    if (role !== 'manager') return { ok: false, error: 'manager only' };
+    const before = await row();
+    if (!before) return { ok: false, error: 'not found' };
+    await db.batch([
+      db.prepare('DELETE FROM coupons WHERE code = ?').bind(code),
+      db.prepare('INSERT INTO acct_audit (t, action, detail) VALUES (?, ?, ?)')
+        .bind(Date.now(), 'coupon_delete', JSON.stringify({ code, holder: before.holder, percent: before.percent, amount: before.amount || 0, title: before.title || '', usedAt: before.used_at, usedBy: before.used_by }))
+    ]);
+    return { ok: true, deleted: true };
+  }
   if (action === 'coupon_reactivate') {                      // manager only: put a used coupon back to unused
     if (role !== 'manager') return { ok: false, error: 'manager only' };
     const before = await row();
