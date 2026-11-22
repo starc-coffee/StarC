@@ -923,9 +923,9 @@
             <span class="close-btn" onclick="closeStampModal()">&times;</span>
             <h3 style="color: var(--gold-primary); font-family: var(--font-heading);">Loyalty Stamp</h3>
             <form id="stampForm" onsubmit="handleStamp(event)">
-                <label for="stampCode">Enter Stamp Code</label>
-                <input type="text" id="stampCode" required placeholder="XXXX-XXXX">
-                <button type="submit" class="submit-btn">Redeem Stamp</button>
+                <label for="stampPhone">Customer mobile number</label>
+                <input type="tel" id="stampPhone" required placeholder="09xx xxx xxx" autocomplete="off">
+                <button type="submit" class="submit-btn">Add Stamp</button>
             </form>
             <div id="stampStatus" class="status-msg"></div>
         </div>
@@ -1120,7 +1120,8 @@ function mgmtLogout() { if (window.STARC) STARC.logout(); applyRole(null); }
         function openContact() { document.getElementById('contactModal').style.display = 'flex'; }
         function closeContact() { document.getElementById('contactModal').style.display = 'none'; document.getElementById('contactStatus').textContent = ''; }
 
-        function openStampModal() { document.getElementById('stampModal').style.display = 'flex'; }
+        let stampOpId = '';
+        function openStampModal() { stampOpId = ''; document.getElementById('stampModal').style.display = 'flex'; }
         function closeStampModal() { document.getElementById('stampModal').style.display = 'none'; document.getElementById('stampStatus').textContent = ''; }
 
         // Form Handlers
@@ -1165,12 +1166,44 @@ function mgmtLogout() { if (window.STARC) STARC.logout(); applyRole(null); }
             setTimeout(closeContact, 2000);
         }
 
-        function handleStamp(e) {
+        async function handleStamp(e) {
             e.preventDefault();
-            const status = document.getElementById('stampStatus');
+            const status = document.getElementById('stampStatus'), btn = e.target.querySelector('button[type=submit]');
+            const ar = document.documentElement.getAttribute('dir') === 'rtl';
             status.style.color = 'var(--gold-primary)';
-            status.textContent = 'Stamp added to your loyalty card!';
-            setTimeout(closeStampModal, 2000);
+            if (!window.STARC || !STARC.token()) { status.textContent = ar ? 'سجّل الدخول من قائمة الإدارة أولاً.' : 'Please log in from the Management menu first.'; return; }
+            if (!stampOpId) stampOpId = crypto.randomUUID();
+            btn.disabled = true; status.textContent = '...';
+            try {
+                const r = await fetch(STARC_CONFIG.url, { method: 'POST', body: JSON.stringify({ action: 'stamp_add', token: STARC.token(), opId: stampOpId, phone: document.getElementById('stampPhone').value }) });
+                const j = await r.json();
+                if (!j.ok) {
+                    status.textContent = j.error === 'phone' ? (ar ? 'رقم الجوال غير صحيح.' : 'Invalid mobile number.')
+                        : j.error === 'auth' ? (ar ? 'انتهت الجلسة، سجّل الدخول من جديد.' : 'Session expired - log in again from Management.')
+                        : (ar ? 'تعذّر إضافة الختم.' : 'Could not add the stamp.');
+                    return;
+                }
+                if (j.dup) { stampOpId = ''; status.textContent = ar ? 'تمت إضافة هذا الختم من قبل.' : 'This stamp was already added.'; return; }
+                stampOpId = '';
+                const c = j.coupon, n = j.count, rem = j.remaining;
+                const link = location.origin + '/coupon.html?c=' + (c ? c.code : '');
+                const msg = c
+                    ? 'StarC Cafe: congrats, our loyal customer! That was your 4th stamp - you have a free of charge cup of coffee ☕\nCoupon code: ' + c.code + '\nShow your QR code at the cashier: ' + link + '\nValid until ' + c.validUntil
+                      + '\n\nStarC Cafe: مبروك يا عميلنا الوفي! هذا هو ختمك الرابع وقد ربحت كوب قهوة مجاني ☕\nرمز الكوبون: ' + c.code + '\nأظهر رمز QR للكاشير: ' + link + '\nصالح حتى ' + c.validUntil
+                    : 'StarC Cafe: thank you! You now have ' + n + ' stamp' + (n > 1 ? 's' : '') + '. ' + rem + ' more to get a free cup of coffee ☕'
+                      + '\n\nStarC Cafe: شكراً لك! لديك ' + n + ' ختم. تبقّى ' + rem + ' للحصول على كوب قهوة مجاني ☕';
+                status.textContent = c ? (ar ? 'الختم الرابع! تم إنشاء كوبون القهوة المجانية.' : '4th stamp! Free-cup coupon created.')
+                                       : (ar ? 'تمت إضافة الختم (' + n + ' من 4).' : 'Stamp added (' + n + ' of 4).');
+                const a = document.createElement('a');
+                a.className = 'submit-btn'; a.target = '_blank'; a.rel = 'noopener';
+                a.style.cssText = 'display:block;margin-top:12px;text-align:center;text-decoration:none;';
+                a.href = 'https://wa.me/' + j.phone + '?text=' + encodeURIComponent(msg);
+                a.textContent = ar ? 'إرسال الرسالة عبر واتساب' : 'Send WhatsApp message to customer';
+                status.appendChild(a);
+                document.getElementById('stampForm').reset();
+            } catch (err) {
+                status.textContent = ar ? 'تعذّر الاتصال بالخادم.' : 'Could not reach the server.';
+            } finally { btn.disabled = false; }
         }
 
         window.onclick = function(event) {
