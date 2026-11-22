@@ -573,7 +573,7 @@ $("#printBtn").onclick = ()=>{
     <table style="margin-top:10px"><thead><tr><th>#</th><th>Item</th><th class="num">Price</th><th class="num">Qty</th>${hasItemDisc?'<th class="num">Discount</th>':""}<th class="num">Total</th></tr></thead><tbody>
     ${c.lines.map(l=>{ const d=l.d; return `<tr><td>${d.custom?"":esc(d.id)}</td><td>${d.en?esc(d.en):""}${d.en&&d.ar?"<br>":""}${d.ar?`<span dir="rtl">${esc(d.ar)}</span>`:""}</td><td class="num">${money(d.price)}</td><td class="num">${esc(l.it.qty)}</td>${hasItemDisc?`<td class="num">${discCellP(l)}</td>`:""}<td class="num">${money(l.net)}</td></tr>`; }).join("")}
     </tbody></table>
-    <p style="text-align:right">Subtotal: ${money(c.gross)}<br>${hasItemDisc?`Item discounts: -${money(c.itemDisc)}<br>`:""}${hasInvDisc?`${v.coupon?"Coupon "+esc(v.coupon.code)+" ("+esc(v.coupon.percent)+"%)":"Discount"+(v.discType==="amt"?"":" ("+esc(Number(v.discVal)||0)+"%)")}: -${money(c.invDisc)}<br>`:""}Service / Tax (${esc(v.taxPct)}%): ${money(c.tax)}<br><b style="font-size:16px">Grand Total: ${money(c.grand)}</b></p>
+    <p style="text-align:right">Subtotal: ${money(c.gross)}<br>${hasItemDisc?`Item discounts: -${money(c.itemDisc)}<br>`:""}${hasInvDisc?`${v.coupon?"Coupon "+esc(v.coupon.code)+" ("+(v.coupon.amount>0 ? esc(v.coupon.title||"coupon") : esc(v.coupon.percent)+"%")+")":"Discount"+(v.discType==="amt"?"":" ("+esc(Number(v.discVal)||0)+"%)")}: -${money(c.invDisc)}<br>`:""}Service / Tax (${esc(v.taxPct)}%): ${money(c.tax)}<br><b style="font-size:16px">Grand Total: ${money(c.grand)}</b></p>
     <p style="text-align:center">Thank you — شكراً لزيارتكم</p>`;
   /* the browser prints the page title in its header: blank it while printing, then restore it */
   const oldTitle = document.title; document.title = "\u00A0";
@@ -690,7 +690,7 @@ function renderCoupon(){
   box.hidden = has; info.hidden = !has; if(has) cpnClear();
   $("#f_dtype").disabled = $("#f_dval").disabled = has;
   if(has){
-    info.innerHTML = `<span>🎟 Coupon <b>${esc(v.coupon.code)}</b> · ${esc(v.coupon.holder)} · <b>${esc(v.coupon.percent)}%</b> off the full bill</span><button class="btn ghost small" id="cpnRemove" type="button">Remove coupon</button>`;
+    info.innerHTML = `<span>🎟 Coupon <b>${esc(v.coupon.code)}</b> · ${esc(v.coupon.holder)} · ${v.coupon.amount>0 ? `<b>${esc(v.coupon.amount)}</b> off · ${esc(v.coupon.title||"")}` : `<b>${esc(v.coupon.percent)}%</b> off the full bill`}</span><button class="btn ghost small" id="cpnRemove" type="button">Remove coupon</button>`;
     $("#cpnRemove").onclick = ()=>{ removeCoupon(inv()); renderInvoice(); save(); toast("Coupon removed."); };
   } else info.innerHTML = "";
 }
@@ -704,11 +704,12 @@ async function applyCoupon(raw){
     const r = await couponApi("coupon_get", code), c = r.coupon;
     if(c.status!=="valid"){ cpnShow(couponProblem(code, c)); $("#cpnCode").select(); return; }
     v.prevDisc = {t:v.discType, v:v.discVal};
-    v.discType = "pct"; v.discVal = String(c.percent);
-    v.coupon = {code:c.code, percent:c.percent, holder:c.holder};
+    const amt = Number(c.amount) || 0;            /* loyalty coupons carry a fixed amount (percent 0) */
+    v.discType = amt > 0 ? "amt" : "pct"; v.discVal = String(amt > 0 ? amt : c.percent);
+    v.coupon = {code:c.code, percent:c.percent, amount:amt, title:c.title||"", holder:c.holder};
     $("#cpnCode").value = "";
     renderInvoice(); save();
-    toast(`Coupon ${c.code}: ${c.percent}% off applied.`);
+    toast(amt > 0 ? `Coupon ${c.code}: ${amt} off applied.` : `Coupon ${c.code}: ${c.percent}% off applied.`);
   }catch(e){
     cpnShow("❌ " + couponErr(e) + (e.detail==="not found" ? " Check the code and try again. · القسيمة غير موجودة" : ""));
     if(e.kind==="auth" && window.starcLock) window.starcLock();
@@ -718,7 +719,12 @@ async function applyCoupon(raw){
 async function redeemCoupon(v){
   try{
     const r = await couponApi("coupon_redeem", v.coupon.code);
-    if(r.coupon && Number(r.coupon.percent)!==Number(v.coupon.percent)){ v.coupon.percent = r.coupon.percent; v.discVal = String(r.coupon.percent); }
+    if(r.coupon){
+      const a = Number(r.coupon.amount) || 0;
+      if(a > 0 ? a !== Number(v.coupon.amount) : Number(r.coupon.percent) !== Number(v.coupon.percent)){
+        v.coupon.percent = r.coupon.percent; v.coupon.amount = a; v.discVal = String(a > 0 ? a : r.coupon.percent);
+      }
+    }
     return true;
   }catch(e){
     if(e.kind==="server" && (e.detail==="used" || e.detail==="expired" || e.detail==="not found")){
