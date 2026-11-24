@@ -8,6 +8,8 @@
  * Secrets to set in Cloudflare (Worker > Settings > Variables and secrets):
  *   MANAGER_PASSWORD   EMPLOYEE_PASSWORD
  */
+import { calendar } from './calendar.js';
+
 const TOKEN_HOURS = 12;
 const COUPON_TZ = 'UTC';   // <- your cafe time zone, e.g. 'Asia/Beirut'. A coupon is valid through the end of its last day in this zone.
 const enc = new TextEncoder();
@@ -394,6 +396,7 @@ export default {
       let req; try { req = JSON.parse(text); } catch (e) { return json({ ok: false, error: 'invalid' }, 400); }
       const action = str(req.action, 20);
       if (action === 'login') return json(await login(env, request, req));
+      if (action.startsWith('cal_')) return json(await calendar(env, request, req, action, meta, { str, num, same, sha256, b64url, hmac, verify, getSecret, login, normPhone }));   // task calendar (src/calendar.js)
       if (action === 'coupon_public') {                       // customer's coupon page: shows status only, no login needed
         const r = await env.DB.prepare('SELECT * FROM coupons WHERE code = ?').bind(couponCode(req.code)).first();
         return json(r ? { ok: true, coupon: { code: r.code, title: r.title || '', amount: r.amount || 0, percent: r.percent, validUntil: r.valid_until, status: couponView(r).status } } : { ok: false, error: 'not found' });
