@@ -26,7 +26,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--bg);colo
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hide{display:none!important}.banner{background:var(--g2);border:1px solid var(--g)}
 @media(max-width:560px){.day{min-height:52px}.chip{font-size:10px}}
 </style></head><body>
-<div id="login" class="hide"><h2 style="margin-top:0">Tasks · المهام</h2><label for="pw">Password · كلمة المرور</label><input id="pw" type="password" autocomplete="current-password"><p id="err"></p><button class="pri" id="go" style="width:100%">Log in · دخول</button></div>
+<div id="login" class="hide"><h2 style="margin-top:0">Tasks · المهام</h2><label for="pw">Password · كلمة المرور</label><input id="pw" type="password" autocomplete="current-password"><p id="err"></p><button class="pri" id="go" style="width:100%">Log in · دخول</button><div class="m" style="margin-top:10px">v2 · single login</div></div>
 
 <div id="app" class="hide">
 <header><div><h1>Task calendar · جدول المهام</h1><small id="who"></small></div><div class="hb"><a class="btn" href="/">Back to site</a><button id="ppl" class="hide">People · الأشخاص</button><button id="out">Log out</button></div></header>
@@ -70,18 +70,18 @@ function dam() {                                   // "now" in Damascus: YYYY-MM
 }
 var today = function () { return dam().slice(0, 10); };
 var CFG = window.STARC_CONFIG || {}, URL_ = (CFG.url && CFG.url.indexOf('PASTE') < 0) ? CFG.url : '/api/sync', SK = 'starcCal';
-var S = null, skipAuto = false, people = [], tasks = [], pend = [], sel = today(), mon = new Date(), editing = 0, timer = 0;
+var S = null, skipAuto = false, authMsg = '', people = [], tasks = [], pend = [], sel = today(), mon = new Date(), editing = 0, timer = 0;
 mon.setDate(1);
 
 function sess() {
   try { var s = JSON.parse(localStorage.getItem(SK)); if (s && s.token && s.exp > Date.now()) return s; } catch (e) {}
-  if (!skipAuto && window.STARC && STARC.role() && STARC.token()) return { role: STARC.role(), token: STARC.token() };   // already logged in through Management
+  if (!skipAuto && window.STARC && STARC.role() && STARC.token()) return { role: STARC.role(), token: STARC.token(), site: true };   // already logged in through Management
   return null;
 }
 async function api(a, b) {
   var j; try { var r = await fetch(URL_, { method: 'POST', body: JSON.stringify(Object.assign({ action: a, token: S && S.token }, b || {})) }); j = await r.json(); }
   catch (e) { return { ok: false, error: 'network' }; }
-  if (j && j.error === 'auth') { skipAuto = true; try { localStorage.removeItem(SK); } catch (e) {} S = null; show(); }
+  if (j && j.error === 'auth') { authMsg = (S && S.site) ? 'This Management login is not a personal login. Enter your personal password here (the manager sets it under People). · أدخل كلمة مرورك الشخصية هنا.' : ''; skipAuto = true; try { localStorage.removeItem(SK); } catch (e) {} S = null; show(); }
   return j;
 }
 function logout() { try { localStorage.removeItem(SK); } catch (e) {} if (window.STARC) STARC.logout(); S = null; show(); }
@@ -97,6 +97,7 @@ async function doLogin() {
 function show() {
   S = S || sess(); var on = !!S;
   $('#login').classList.toggle('hide', on); $('#app').classList.toggle('hide', !on);
+  if (!on) { $('#err').textContent = authMsg; authMsg = ''; }
   clearInterval(timer); if (on) boot();
 }
 var nm = function (p) { return p.label + (p.nick ? ' (' + p.nick + ')' : ''); };
