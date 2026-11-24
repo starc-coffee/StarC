@@ -1,7 +1,8 @@
 /*
  * StarC Task Calendar — API module (called from worker.js for every action that starts with "cal_").
  * Tables (created automatically): cal_people, cal_tasks, cal_done, cal_sent.
- * Owner + Manager use the manager password. Each employee has his own password (set by the manager).
+ * Owner + Manager use the manager password. Each employee has his own password (set by the manager); that password
+ * also works in the site's Management login (see login() in worker.js), so he is never asked twice.
  */
 const TZ = 'Asia/Damascus';
 const DATE = /^\d{4}-\d{2}-\d{2}$/, TIME = /^\d{2}:\d{2}$/, STAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
@@ -30,39 +31,23 @@ async function init(db) {
 }
 const hashPw = async (h, salt, pw) => h.b64url(await h.sha256(salt + ':' + pw));
 
-/* login: employee personal password first, otherwise the normal manager login */
-async function calLogin(env, request, req, h, meta) {
-  const db = env.DB, pw = h.str(req.password, 200);
-  const ip = h.b64url(await h.sha256('ip:' + (request.headers.get('CF-Connecting-IP') || 'x')));
-  const lock = await db.prepare('SELECT until FROM logins WHERE ip = ?').bind(ip).first();
-  if (lock && lock.until > Date.now()) return { ok: false, error: 'locked' };
-  if (pw.length >= 4) {
-    const { results } = await db.prepare("SELECT id, salt, pw FROM cal_people WHERE kind = 'employee' AND pw != ''").all();
-    for (const p of results) {
-      if (await h.same(await hashPw(h, p.salt, pw), p.pw)) {
-        const exp = Date.now() + 12 * 3600000, payload = 'emp' + p.id + '.' + exp, secret = await h.getSecret(db, meta);
-        await db.prepare('DELETE FROM logins WHERE ip = ?').bind(ip).run();
-        return { ok: true, role: 'employee', id: p.id, exp, token: payload + '.' + await h.hmac(secret + ':' + p.pw, payload) };
-      }
-    }
-  }
-  const r = await h.login(env, request, req);          // counts wrong tries and locks, same as the rest of the site
-  return (r.ok && r.role !== 'manager') ? { ok: false, error: 'wrong' } : r;
+/* login: the normal site login already knows personal employee passwords; the calendar only needs a personal or manager token */
+async function calLogin(env, request, req, h) {
+  const r = await h.login(env, request, req);
+  if (r.ok && r.role === 'employee' && !String(r.token).startsWith('employee:')) return { ok: false, error: 'wrong' };   // shared employee password: not for the calendar
+  return r;
 }
 async function who(env, h, meta, token) {
-  const secret = await h.getSecret(env.DB, meta);
-  if (await h.verify(env, secret, token) === 'manager') return { role: 'manager' };
-  const p = String(token || '').split('.'), m = /^emp(\d+)$/.exec(p[0] || '');
-  if (!m || p.length !== 3 || !(Number(p[1]) > Date.now())) return null;
-  const row = await env.DB.prepare("SELECT id, pw FROM cal_people WHERE id = ? AND kind = 'employee' AND pw != ''").bind(Number(m[1])).first();
-  if (!row) return null;
-  return await h.same(p[2], await h.hmac(secret + ':' + row.pw, p[0] + '.' + p[1])) ? { role: 'employee', id: row.id } : null;
+  const role = await h.verify(env, await h.getSecret(env.DB, meta), token);
+  if (role === 'manager') return { role: 'manager' };
+  const m = /^employee:(\d+)\./.exec(String(token || ''));
+  return role === 'employee' && m ? { role: 'employee', id: Number(m[1]) } : null;
 }
 
 export async function calendar(env, request, req, action, meta, h) {
   const db = env.DB;
   await init(db);
-  if (action === 'cal_login') return calLogin(env, request, req, h, meta);
+  if (action === 'cal_login') return calLogin(env, request, req, h);
   const me = await who(env, h, meta, req.token);
   if (!me) return { ok: false, error: 'auth' };
   const mgr = me.role === 'manager';
@@ -87,7 +72,7 @@ export async function calendar(env, request, req, action, meta, h) {
     if (np) {
       if (p.kind !== 'employee') return { ok: false, error: 'no password for this person' };
       if (np.length < 4) return { ok: false, error: 'short' };
-      if (env.MANAGER_PASSWORD && await h.same(np, env.MANAGER_PASSWORD)) return { ok: false, error: 'taken' };
+      if ((env.MANAGER_PASSWORD && await h.same(np, env.MANAGER_PASSWORD)) || (env.EMPLOYEE_PASSWORD && await h.same(np, env.EMPLOYEE_PASSWORD))) return { ok: false, error: 'taken' };
       for (const o of people) if (o.id !== p.id && o.kind === 'employee' && o.pw && await h.same(await hashPw(h, (await db.prepare('SELECT salt FROM cal_people WHERE id = ?').bind(o.id).first()).salt, np), o.pw)) return { ok: false, error: 'taken' };
       salt = crypto.randomUUID(); pw = await hashPw(h, salt, np);
     }

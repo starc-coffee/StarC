@@ -84,6 +84,13 @@ async function login(env, request, req) {
   let role = null;
   if (configured(env.MANAGER_PASSWORD) && await same(pw, env.MANAGER_PASSWORD)) role = 'manager';
   else if (configured(env.EMPLOYEE_PASSWORD) && await same(pw, env.EMPLOYEE_PASSWORD)) role = 'employee';
+  let person = null;
+  if (!role && pw.length >= 4) {                    // an employee's PERSONAL password (set by the manager in the Task calendar)
+    try {
+      const { results } = await db.prepare("SELECT id, salt, pw FROM cal_people WHERE kind = 'employee' AND pw != ''").all();
+      for (const p of results) if (await same(b64url(await sha256(p.salt + ':' + pw)), p.pw)) { person = p; role = 'employee'; break; }
+    } catch (e) { /* calendar tables not created yet */ }
+  }
   if (!role) {
     let n = (row && row.first > now - 900000 ? row.n : 0) + 1, until = 0;
     if (n >= 8) { until = now + 900000; n = 0; }            // 8 wrong tries -> 15 minutes pause
@@ -95,14 +102,21 @@ async function login(env, request, req) {
   if (row) await db.prepare('DELETE FROM logins WHERE ip = ?').bind(ip).run();
   const secret = await getSecret(db, await metaAll(db));
   const exp = now + TOKEN_HOURS * 3600000;
-  const payload = role + '.' + exp;
+  const payload = (person ? 'employee:' + person.id : role) + '.' + exp;   // a personal token carries the employee's id
   // the signing key includes the password, so changing a password logs that role out
-  return { ok: true, role, exp, token: payload + '.' + await hmac(secret + ':' + rolePassword(env, role), payload) };
+  return { ok: true, role, exp, ...(person ? { id: person.id } : {}), token: payload + '.' + await hmac(secret + ':' + (person ? person.pw : rolePassword(env, role)), payload) };
 }
 async function verify(env, secret, token) {
   const p = String(token || '').split('.');
   if (p.length !== 3) return null;
   const role = p[0], exp = Number(p[1]);
+  const pm = /^employee:(\d+)$/.exec(role);
+  if (pm && exp > Date.now()) {                     // personal employee token
+    try {
+      const row = await env.DB.prepare("SELECT pw FROM cal_people WHERE id = ? AND kind = 'employee' AND pw != ''").bind(Number(pm[1])).first();
+      return row && await same(p[2], await hmac(secret + ':' + row.pw, role + '.' + exp)) ? 'employee' : null;
+    } catch (e) { return null; }
+  }
   if ((role !== 'manager' && role !== 'employee') || !(exp > Date.now())) return null;
   const pw = rolePassword(env, role);
   if (!configured(pw)) return null;
