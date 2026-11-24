@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>StarC — Tasks | المهام</title>
+<style>
+:root{--ink:#16211d;--mut:#5d6b66;--bg:#f2f4f1;--card:#fff;--line:#d9dfdb;--g:#1f4d42;--gt:#fff;--g2:#e3efe9;--br:#b4852f;--red:#b3392f;--ok:#2f7a4d}
+@media(prefers-color-scheme:dark){:root{--ink:#e8eeea;--mut:#9aa8a2;--bg:#101714;--card:#18221e;--line:#2a3833;--g:#4fae93;--gt:#0d1512;--g2:#1d3029;--br:#d4a54a;--red:#e0675c;--ok:#5bbd86}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;background:var(--g);color:var(--gt);flex-wrap:wrap}
+header h1{margin:0;font-size:19px}header small{opacity:.8}.hb{display:flex;gap:6px;flex-wrap:wrap}
+button,.btn{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;text-decoration:none}
+header button,header .btn{background:transparent;color:var(--gt);border-color:currentColor}
+.pri{background:var(--g);color:var(--gt);border-color:var(--g)}.dng{color:var(--red)}
+main{max-width:960px;margin:0 auto;padding:14px}
+input,select,textarea{font:inherit;width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+label{display:block;margin:10px 0 3px;font-weight:600}label.c{display:flex;gap:8px;align-items:center;font-weight:400;margin:4px 0}label.c input{width:auto}
+#login{max-width:340px;margin:18vh auto;padding:20px;background:var(--card);border:1px solid var(--line);border-radius:12px}#err{color:var(--red);min-height:1.4em}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.rem{border-color:var(--br);border-width:2px}.rem h3{margin:0 0 6px;font-size:15px}.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--line)}
+.nav{display:flex;align-items:center;gap:8px;margin:4px 0 8px}.nav h2{flex:1;margin:0;font-size:18px;text-align:center}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.wd{text-align:center;color:var(--mut);font-size:12px;padding:2px}
+.day{min-height:68px;padding:3px;text-align:start;display:flex;flex-direction:column;gap:2px;border-radius:6px;overflow:hidden}
+.day.o{opacity:.45}.day.t b{color:var(--br)}.day.s{outline:2px solid var(--g);background:var(--g2)}
+.chip{font-size:11px;background:var(--g);color:var(--gt);border-radius:4px;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chip.dn{background:var(--line);color:var(--mut);text-decoration:line-through}.more{font-size:11px;color:var(--mut)}
+.task{background:var(--card);border:1px solid var(--line);border-inline-start:5px solid var(--g);border-radius:8px;padding:10px 12px;margin:8px 0}.task.dn{border-inline-start-color:var(--ok);opacity:.8}
+.task b{font-size:16px}.m{color:var(--mut);font-size:13px}.act{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);width:min(480px,94vw);padding:16px}dialog::backdrop{background:#0008}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hide{display:none!important}.banner{background:var(--g2);border:1px solid var(--g)}
+@media(max-width:560px){.day{min-height:52px}.chip{font-size:10px}}
+</style></head><body>
+<div id="login" class="hide"><h2 style="margin-top:0">Tasks · المهام</h2><label for="pw">Password · كلمة المرور</label><input id="pw" type="password" autocomplete="current-password"><p id="err"></p><button class="pri" id="go" style="width:100%">Log in · دخول</button></div>
+
+<div id="app" class="hide">
+<header><div><h1>Task calendar · جدول المهام</h1><small id="who"></small></div><div class="hb"><a class="btn" href="/">Back to site</a><button id="ppl" class="hide">People · الأشخاص</button><button id="out">Log out</button></div></header>
+<main>
+  <div id="ban" class="box banner hide"></div>
+  <div id="pend" class="box rem hide"></div>
+  <div class="nav"><button id="pv">‹</button><h2 id="mt"></h2><button id="nx">›</button><button id="td">Today</button></div>
+  <div class="grid" id="wds"></div><div class="grid" id="gr"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><h3 id="dh" style="margin:0"></h3><button class="pri hide" id="add">+ Add task · مهمة</button></div>
+  <div id="cards"></div>
+</main></div>
+
+<dialog id="dlg"><h3 style="margin-top:0" id="dt">Task</h3>
+  <label for="ti">Task · المهمة</label><input id="ti" maxlength="200">
+  <label for="no">Notes</label><textarea id="no" rows="2" maxlength="1000"></textarea>
+  <div class="two"><div><label for="da">Date</label><input id="da" type="date"></div><div><label for="tm">Time (optional)</label><input id="tm" type="time"></div></div>
+  <label>For · لمن</label><div id="asg"></div>
+  <label for="rs">Reminder · تذكير</label>
+  <select id="rs"><option value="d1">1 day before, 14:00 (default)</option><option value="d0">Same day, 14:00</option><option value="d2">2 days before, 14:00</option><option value="h1">1 hour before the task</option><option value="custom">Choose date and time…</option><option value="none">No reminder</option></select>
+  <input id="rc" type="datetime-local" class="hide" style="margin-top:6px"><div class="m">Reminder times are Damascus time.</div>
+  <label class="c"><input type="checkbox" id="wa"> Open WhatsApp after saving</label>
+  <div class="act"><button class="pri" id="sv">Save</button><button id="cx">Cancel</button></div>
+</dialog>
+
+<dialog id="wad"><h3 style="margin-top:0">Send on WhatsApp</h3><div id="wal"></div><div class="act"><button id="wx">Close</button></div></dialog>
+
+<dialog id="pd"><h3 style="margin-top:0">People · الأشخاص</h3><div class="m">Nickname shows in brackets. Employees log in with their own password.</div><div id="pl"></div><div class="act"><button id="px">Close</button></div></dialog>
+
+<script src="/starc-config.js"></script><script src="/starc-auth.js"></script>
+<script>
+(function () {
+var $ = function (s) { return document.querySelector(s); };
+var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+var p2 = function (n) { return String(n).padStart(2, '0'); };
+var ymd = function (d) { return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); };
+var addDays = function (s, n) { var d = new Date(s + 'T12:00:00'); d.setDate(d.getDate() + n); return ymd(d); };
+function dam() {                                   // "now" in Damascus: YYYY-MM-DDTHH:MM
+  var p = {}; new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Damascus', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+  return p.year + '-' + p.month + '-' + p.day + 'T' + p.hour + ':' + p.minute;
+}
+var today = function () { return dam().slice(0, 10); };
+var CFG = window.STARC_CONFIG || {}, URL_ = (CFG.url && CFG.url.indexOf('PASTE') < 0) ? CFG.url : '/api/sync', SK = 'starcCal';
+var S = null, people = [], tasks = [], pend = [], sel = today(), mon = new Date(), editing = 0, timer = 0;
+mon.setDate(1);
+
+function sess() {
+  try { var s = JSON.parse(localStorage.getItem(SK)); if (s && s.token && s.exp > Date.now()) return s; } catch (e) {}
+  if (window.STARC && STARC.role() === 'manager') return { role: 'manager', token: STARC.token() };
+  return null;
+}
+async function api(a, b) {
+  var j; try { var r = await fetch(URL_, { method: 'POST', body: JSON.stringify(Object.assign({ action: a, token: S && S.token }, b || {})) }); j = await r.json(); }
+  catch (e) { return { ok: false, error: 'network' }; }
+  if (j && j.error === 'auth') logout();
+  return j;
+}
+function logout() { try { localStorage.removeItem(SK); } catch (e) {} if (window.STARC) STARC.logout(); S = null; show(); }
+async function doLogin() {
+  $('#err').textContent = ''; var j;
+  try { j = await (await fetch(URL_, { method: 'POST', body: JSON.stringify({ action: 'cal_login', password: $('#pw').value }) })).json(); }
+  catch (e) { $('#err').textContent = 'No connection · لا يوجد اتصال'; return; }
+  if (!j.ok) { $('#err').textContent = j.error === 'locked' ? 'Too many tries. Wait 15 minutes.' : 'Wrong password · كلمة المرور خاطئة'; return; }
+  S = { role: j.role, id: j.id, token: j.token, exp: j.exp };
+  try { localStorage.setItem(SK, JSON.stringify(S)); } catch (e) {}
+  $('#pw').value = ''; show();
+}
+function show() {
+  S = S || sess(); var on = !!S;
+  $('#login').classList.toggle('hide', on); $('#app').classList.toggle('hide', !on);
+  clearInterval(timer); if (on) boot();
+}
+var nm = function (p) { return p.label + (p.nick ? ' (' + p.nick + ')' : ''); };
+var mgr = function () { return S && S.role === 'manager'; };
+
+async function boot() {
+  var m = mgr(); $('#ppl').classList.toggle('hide', !m); $('#add').classList.toggle('hide', !m);
+  var pj = await api('cal_people'); people = pj.people || [];
+  $('#who').textContent = m ? 'Owner / Manager' : (people[0] ? nm(people[0]) : 'Employee');
+  await load();
+  if (m) { await pending(); timer = setInterval(pending, 60000); }
+}
+function range() { var f = new Date(mon); f.setDate(1 - f.getDay()); var t = new Date(f); t.setDate(f.getDate() + 41); return [ymd(f), ymd(t), f]; }
+async function load() {
+  var r = range(), j = await api('cal_list', { from: r[0], to: r[1] }); tasks = j.tasks || [];
+  if (!mgr()) {
+    var k = await api('cal_list', { from: today(), to: addDays(today(), 1) }), due = (k.tasks || []).filter(function (t) { return !t.done; });
+    $('#ban').classList.toggle('hide', !due.length);
+    $('#ban').innerHTML = due.length ? '<b>Coming up · قريباً</b>' + due.map(function (t) { return '<div class="row"><span>' + esc(t.title) + '</span><span class="m">' + t.date + (t.time ? ' ' + t.time : '') + '</span></div>'; }).join('') : '';
+  }
+  render();
+}
+var isDone = function (t) { return mgr() ? (t.ids.length > 0 && t.ids.every(function (i) { return t.done.indexOf(i) >= 0; })) : t.done === true; };
+function forText(t) { return mgr() ? (t.all ? 'Everyone' : t.ids.map(function (i) { var p = people.find(function (x) { return x.id === i; }); return p ? nm(p) : ''; }).join(', ')) : (t.all ? 'Everyone' : 'You'); }
+
+function render() {
+  $('#mt').textContent = mon.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  $('#wds').innerHTML = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(function (d) { return '<div class="wd">' + d + '</div>'; }).join('');
+  var r = range(), d = new Date(r[2]), h = '', by = {};
+  tasks.forEach(function (t) { (by[t.date] = by[t.date] || []).push(t); });
+  for (var i = 0; i < 42; i++, d.setDate(d.getDate() + 1)) {
+    var k = ymd(d), l = by[k] || [];
+    h += '<button class="day' + (d.getMonth() !== mon.getMonth() ? ' o' : '') + (k === today() ? ' t' : '') + (k === sel ? ' s' : '') + '" data-d="' + k + '"><b>' + d.getDate() + '</b>' +
+      l.slice(0, 2).map(function (t) { return '<span class="chip' + (isDone(t) ? ' dn' : '') + '">' + esc(t.title) + '</span>'; }).join('') + (l.length > 2 ? '<span class="more">+' + (l.length - 2) + '</span>' : '') + '</button>';
+  }
+  $('#gr').innerHTML = h;
+  $('#dh').textContent = new Date(sel + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  var list = by[sel] || [];
+  $('#cards').innerHTML = list.length ? list.map(card).join('') : '<p class="m">No tasks on this day.' + (mgr() ? ' Press “Add task”.' : '') + '</p>';
+}
+function card(t) {
+  var h = '<div class="task' + (isDone(t) ? ' dn' : '') + '"><b>' + esc(t.title) + '</b> <span class="m">' + (t.time ? '⏰ ' + t.time : 'all day') + '</span><div class="m">For: ' + esc(forText(t)) + '</div>' + (t.notes ? '<div>' + esc(t.notes) + '</div>' : '');
+  if (mgr()) {
+    h += t.ids.map(function (i) { var p = people.find(function (x) { return x.id === i; }); return p ? '<label class="c"><input type="checkbox" data-done="' + t.id + '" data-p="' + i + '"' + (t.done.indexOf(i) >= 0 ? ' checked' : '') + '> ' + esc(nm(p)) + ' done</label>' : ''; }).join('');
+    h += '<div class="act"><button data-edit="' + t.id + '">Edit</button><button data-wa="' + t.id + '">WhatsApp</button><button class="dng" data-del="' + t.id + '">Delete</button></div>';
+  } else h += '<label class="c"><input type="checkbox" data-done="' + t.id + '"' + (t.done ? ' checked' : '') + '> Mark as done · تم</label>';
+  return h + '</div>';
+}
+
+/* ---- WhatsApp: opens on THIS device, the person only taps Send ---- */
+function msg(p, t, k) { return 'StarC Cafe ☕\nHi' + (p.nick ? ' ' + p.nick : '') + ', ' + (k === 'new' ? 'new task · مهمة جديدة' : 'task reminder · تذكير بمهمة') + ':\n*' + t.title + '*\n📅 ' + t.date + (t.time ? '  ⏰ ' + t.time : '') + (t.notes ? '\n' + t.notes : ''); }
+var link = function (p, t, k) { return 'https://wa.me/' + p.phone + '?text=' + encodeURIComponent(msg(p, t, k)); };
+async function mark(t, p, k) { await api('cal_sent', { taskId: t.id, personId: p.id, kind: k }); if (k === 'remind') pending(); }
+function recips(t) { return people.filter(function (p) { return t.all || (t.ids || []).indexOf(p.id) >= 0; }); }
+function openSend(t, rec, k, w) {
+  var first = rec.find(function (p) { return p.phone; });
+  $('#wal').innerHTML = rec.map(function (p, i) { return '<div class="row"><span>' + esc(nm(p)) + '</span>' + (p.phone ? '<button class="pri" data-s="' + i + '">Send</button>' : '<span class="m">no number</span>') + '</div>'; }).join('');
+  $('#wal').onclick = function (e) { var b = e.target.closest('[data-s]'); if (!b) return; var p = rec[+b.dataset.s]; window.open(link(p, t, k), '_blank'); mark(t, p, k); b.textContent = 'Sent ✓'; };
+  $('#wad').showModal();
+  if (w && first) { w.location.href = link(first, t, k); mark(t, first, k); var b = $('#wal [data-s="' + rec.indexOf(first) + '"]'); if (b) b.textContent = 'Sent ✓'; } else if (w) w.close();
+}
+async function pending() {
+  var j = await api('cal_pending'); pend = j.items || []; var b = $('#pend');
+  b.classList.toggle('hide', !pend.length); document.title = (pend.length ? '(' + pend.length + ') ' : '') + 'StarC — Tasks | المهام';
+  b.innerHTML = pend.length ? '<h3>⏰ Reminders to send · تذكيرات للإرسال (' + pend.length + ')</h3>' + pend.map(function (x, i) {
+    return '<div class="row"><span>' + esc(x.label + (x.nick ? ' (' + x.nick + ')' : '')) + ' — ' + esc(x.title) + ' <span class="m">' + x.date + (x.time ? ' ' + x.time : '') + '</span></span>' +
+      (x.phone ? '<button class="pri" data-r="' + i + '">Send WhatsApp</button>' : '<span class="m">no number</span>') + '</div>'; }).join('') : '';
+}
+
+/* ---- task form ---- */
+function remindAt(o, date, time) {
+  if (o === 'none') return ''; if (o === 'custom') return $('#rc').value.slice(0, 16);
+  if (o === 'h1') { var d = new Date(date + 'T' + (time || '09:00')); d.setHours(d.getHours() - 1); return ymd(d) + 'T' + p2(d.getHours()) + ':' + p2(d.getMinutes()); }
+  return addDays(date, o === 'd0' ? 0 : o === 'd2' ? -2 : -1) + 'T14:00';
+}
+function openTask(t) {
+  editing = t ? t.id : 0; $('#dt').textContent = t ? 'Edit task' : 'New task';
+  $('#ti').value = t ? t.title : ''; $('#no').value = t ? t.notes : ''; $('#da').value = t ? t.date : sel; $('#tm').value = t ? t.time : '';
+  $('#asg').innerHTML = '<label class="c"><input type="checkbox" id="all"' + (t && t.all ? ' checked' : '') + '> Everyone · الجميع</label>' +
+    people.map(function (p) { return '<label class="c"><input type="checkbox" class="pp" value="' + p.id + '"' + (t && !t.all && t.ids.indexOf(p.id) >= 0 ? ' checked' : '') + '> ' + esc(nm(p)) + '</label>'; }).join('');
+  var rs = 'd1', rv = '';
+  if (t) { rs = t.remindAt ? 'custom' : 'none'; ['d1', 'd0', 'd2'].forEach(function (o) { if (t.remindAt && remindAt(o, t.date, t.time) === t.remindAt) rs = o; }); rv = t.remindAt; }
+  $('#rs').value = rs; $('#rc').value = rv; $('#rc').classList.toggle('hide', rs !== 'custom'); $('#wa').checked = !t; $('#dlg').showModal();
+}
+async function saveTask() {
+  var title = $('#ti').value.trim(), date = $('#da').value, time = $('#tm').value, all = $('#all').checked;
+  var ids = [].slice.call(document.querySelectorAll('.pp:checked')).map(function (x) { return +x.value; });
+  if (!title || !date || (!all && !ids.length)) { alert('Add a title, a date and at least one person.'); return; }
+  var rem = remindAt($('#rs').value, date, time);
+  if ($('#rs').value === 'custom' && !rem) { alert('Choose the reminder date and time.'); return; }
+  var t = { id: 0, title: title, notes: $('#no').value, date: date, time: time, all: all, ids: ids }, rec = $('#wa').checked ? recips(t) : [];
+  var w = rec.some(function (p) { return p.phone; }) ? window.open('', '_blank') : null;     // opened now so the browser allows it
+  var j = await api('cal_task_save', { id: editing, title: title, notes: t.notes, date: date, time: time, assignees: all ? 'all' : ids, remindAt: rem });
+  if (!j.ok) { if (w) w.close(); alert('Could not save: ' + j.error); return; }
+  $('#dlg').close(); t.id = j.id; sel = date; mon = new Date(date + 'T12:00:00'); mon.setDate(1);
+  await load(); pending(); if (rec.length) openSend(t, rec, 'new', w);
+}
+
+/* ---- people ---- */
+function people_() {
+  $('#pl').innerHTML = people.map(function (p) {
+    return '<div class="box"><b>' + esc(p.label) + '</b><div class="two"><div><label>Nickname</label><input data-k="nick" value="' + esc(p.nick) + '" maxlength="40"></div><div><label>WhatsApp number</label><input data-k="phone" value="' + esc(p.phone) + '" placeholder="09xx xxx xxx"></div></div>' +
+      (p.kind === 'employee' ? '<label>Password ' + (p.hasPw ? '(set — type to change)' : '(not set)') + '</label><input data-k="password" type="text" autocomplete="off" placeholder="min 4 characters">' : '') +
+      '<div class="act"><button class="pri" data-sp="' + p.id + '">Save</button><span class="m" data-msg="' + p.id + '"></span></div></div>'; }).join('');
+  $('#pd').showModal();
+}
+
+document.addEventListener('click', async function (e) {
+  var b = e.target.closest('button,input'); if (!b) return;
+  if (b.dataset.d) { sel = b.dataset.d; var d = new Date(sel + 'T12:00:00'); if (d.getMonth() !== mon.getMonth()) { mon = new Date(d); mon.setDate(1); await load(); } else render(); }
+  else if (b.dataset.edit) openTask(tasks.find(function (t) { return t.id == b.dataset.edit; }));
+  else if (b.dataset.wa) { var t = tasks.find(function (x) { return x.id == b.dataset.wa; }); openSend(t, recips(t), 'remind', null); }
+  else if (b.dataset.del) { if (confirm('Delete this task?')) { await api('cal_task_del', { id: +b.dataset.del }); await load(); pending(); } }
+  else if (b.dataset.r) { var x = pend[+b.dataset.r]; window.open(link(x, { title: x.title, notes: x.notes, date: x.date, time: x.time }, 'remind'), '_blank'); await api('cal_sent', { taskId: x.taskId, personId: x.personId, kind: 'remind' }); pending(); }
+  else if (b.dataset.sp) {
+    var box = b.closest('.box'), v = {}; box.querySelectorAll('[data-k]').forEach(function (i) { v[i.dataset.k] = i.value; });
+    var j = await api('cal_person_save', Object.assign({ id: +b.dataset.sp }, v)), m = box.querySelector('[data-msg]');
+    m.textContent = j.ok ? 'Saved ✓' : ({ phone: 'Check the number', taken: 'Password already used', short: 'Password too short' }[j.error] || j.error);
+    if (j.ok) { var pj = await api('cal_people'); people = pj.people || people; await load(); }
+  }
+  else if (b.id === 'all') document.querySelectorAll('.pp').forEach(function (i) { i.checked = false; i.disabled = b.checked; });
+  else if (b.dataset.done !== undefined && b.type === 'checkbox') { await api('cal_done', { taskId: +b.dataset.done, personId: +b.dataset.p || 0, done: b.checked }); await load(); if (mgr()) pending(); }
+});
+$('#go').onclick = doLogin; $('#pw').onkeydown = function (e) { if (e.key === 'Enter') doLogin(); };
+$('#out').onclick = logout; $('#add').onclick = function () { openTask(null); }; $('#sv').onclick = saveTask; $('#cx').onclick = function () { $('#dlg').close(); };
+$('#ppl').onclick = people_; $('#px').onclick = function () { $('#pd').close(); }; $('#wx').onclick = function () { $('#wad').close(); };
+$('#rs').onchange = function () { $('#rc').classList.toggle('hide', this.value !== 'custom'); };
+$('#pv').onclick = function () { mon.setMonth(mon.getMonth() - 1); load(); }; $('#nx').onclick = function () { mon.setMonth(mon.getMonth() + 1); load(); };
+$('#td').onclick = function () { sel = today(); mon = new Date(); mon.setDate(1); load(); };
+show();
+})();
+</script></body></html>
