@@ -70,18 +70,18 @@ function dam() {                                   // "now" in Damascus: YYYY-MM
 }
 var today = function () { return dam().slice(0, 10); };
 var CFG = window.STARC_CONFIG || {}, URL_ = (CFG.url && CFG.url.indexOf('PASTE') < 0) ? CFG.url : '/api/sync', SK = 'starcCal';
-var S = null, people = [], tasks = [], pend = [], sel = today(), mon = new Date(), editing = 0, timer = 0;
+var S = null, skipAuto = false, people = [], tasks = [], pend = [], sel = today(), mon = new Date(), editing = 0, timer = 0;
 mon.setDate(1);
 
 function sess() {
   try { var s = JSON.parse(localStorage.getItem(SK)); if (s && s.token && s.exp > Date.now()) return s; } catch (e) {}
-  if (window.STARC && STARC.role() === 'manager') return { role: 'manager', token: STARC.token() };
+  if (!skipAuto && window.STARC && STARC.role() && STARC.token()) return { role: STARC.role(), token: STARC.token() };   // already logged in through Management
   return null;
 }
 async function api(a, b) {
   var j; try { var r = await fetch(URL_, { method: 'POST', body: JSON.stringify(Object.assign({ action: a, token: S && S.token }, b || {})) }); j = await r.json(); }
   catch (e) { return { ok: false, error: 'network' }; }
-  if (j && j.error === 'auth') logout();
+  if (j && j.error === 'auth') { skipAuto = true; try { localStorage.removeItem(SK); } catch (e) {} S = null; show(); }
   return j;
 }
 function logout() { try { localStorage.removeItem(SK); } catch (e) {} if (window.STARC) STARC.logout(); S = null; show(); }
@@ -92,7 +92,7 @@ async function doLogin() {
   if (!j.ok) { $('#err').textContent = j.error === 'locked' ? 'Too many tries. Wait 15 minutes.' : 'Wrong password · كلمة المرور خاطئة'; return; }
   S = { role: j.role, id: j.id, token: j.token, exp: j.exp };
   try { localStorage.setItem(SK, JSON.stringify(S)); } catch (e) {}
-  $('#pw').value = ''; show();
+  $('#pw').value = ''; skipAuto = false; show();
 }
 function show() {
   S = S || sess(); var on = !!S;
