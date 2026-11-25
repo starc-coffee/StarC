@@ -26,7 +26,7 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--bg);colo
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hide{display:none!important}.banner{background:var(--g2);border:1px solid var(--g)}
 @media(max-width:560px){.day{min-height:52px}.chip{font-size:10px}}
 </style></head><body>
-<div id="login" class="hide"><h2 style="margin-top:0">Tasks · المهام</h2><label for="pw">Password · كلمة المرور</label><input id="pw" type="password" autocomplete="current-password"><p id="err"></p><button class="pri" id="go" style="width:100%">Log in · دخول</button><div class="m" style="margin-top:10px">v2 · single login</div></div>
+<div id="login" class="hide"><h2 style="margin-top:0">Tasks · المهام</h2><label for="pw">Password · كلمة المرور</label><input id="pw" type="password" autocomplete="current-password"><p id="err"></p><button class="pri" id="go" style="width:100%">Log in · دخول</button><div class="m" style="margin-top:10px">v3 · repeating tasks</div></div>
 
 <div id="app" class="hide">
 <header><div><h1>Task calendar · جدول المهام</h1><small id="who"></small></div><div class="hb"><a class="btn" href="/">Back to site</a><button id="ppl" class="hide">People · الأشخاص</button><button id="out">Log out</button></div></header>
@@ -43,6 +43,9 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--bg);colo
   <label for="ti">Task · المهمة</label><input id="ti" maxlength="200">
   <label for="no">Notes</label><textarea id="no" rows="2" maxlength="1000"></textarea>
   <div class="two"><div><label for="da">Date</label><input id="da" type="date"></div><div><label for="tm">Time (optional)</label><input id="tm" type="time"></div></div>
+  <div class="two"><div><label for="rp">Repeat · تكرار</label><select id="rp"><option value="">Does not repeat</option><option value="daily">Every day</option><option value="weekly">Every week</option><option value="monthly">Every month</option><option value="yearly">Every year</option></select></div>
+    <div id="ruw" class="hide"><label for="ru">Until (optional)</label><input id="ru" type="date"></div></div>
+  <div class="m hide" id="rpn">Changes apply to every repeat of this task, and the reminder repeats with it.</div>
   <label>For · لمن</label><div id="asg"></div>
   <label for="rs">Reminder · تذكير</label>
   <select id="rs"><option value="d1">1 day before, 14:00 (default)</option><option value="d0">Same day, 14:00</option><option value="d2">2 days before, 14:00</option><option value="h1">1 hour before the task</option><option value="custom">Choose date and time…</option><option value="none">No reminder</option></select>
@@ -139,18 +142,18 @@ function render() {
   $('#cards').innerHTML = list.length ? list.map(card).join('') : '<p class="m">No tasks on this day.' + (mgr() ? ' Press “Add task”.' : '') + '</p>';
 }
 function card(t) {
-  var h = '<div class="task' + (isDone(t) ? ' dn' : '') + '"><b>' + esc(t.title) + '</b> <span class="m">' + (t.time ? '⏰ ' + t.time : 'all day') + '</span><div class="m">For: ' + esc(forText(t)) + '</div>' + (t.notes ? '<div>' + esc(t.notes) + '</div>' : '');
+  var h = '<div class="task' + (isDone(t) ? ' dn' : '') + '"><b>' + esc(t.title) + '</b> <span class="m">' + (t.time ? '⏰ ' + t.time : 'all day') + (t.repeat ? ' · 🔁 ' + { daily: 'every day', weekly: 'every week', monthly: 'every month', yearly: 'every year' }[t.repeat] : '') + '</span><div class="m">For: ' + esc(forText(t)) + '</div>' + (t.notes ? '<div>' + esc(t.notes) + '</div>' : '');
   if (mgr()) {
-    h += t.ids.map(function (i) { var p = people.find(function (x) { return x.id === i; }); return p ? '<label class="c"><input type="checkbox" data-done="' + t.id + '" data-p="' + i + '"' + (t.done.indexOf(i) >= 0 ? ' checked' : '') + '> ' + esc(nm(p)) + ' done</label>' : ''; }).join('');
+    h += t.ids.map(function (i) { var p = people.find(function (x) { return x.id === i; }); return p ? '<label class="c"><input type="checkbox" data-done="' + t.id + '" data-date="' + t.date + '" data-p="' + i + '"' + (t.done.indexOf(i) >= 0 ? ' checked' : '') + '> ' + esc(nm(p)) + ' done</label>' : ''; }).join('');
     h += '<div class="act"><button data-edit="' + t.id + '">Edit</button><button data-wa="' + t.id + '">WhatsApp</button><button class="dng" data-del="' + t.id + '">Delete</button></div>';
-  } else h += '<label class="c"><input type="checkbox" data-done="' + t.id + '"' + (t.done ? ' checked' : '') + '> Mark as done · تم</label>';
+  } else h += '<label class="c"><input type="checkbox" data-done="' + t.id + '" data-date="' + t.date + '"' + (t.done ? ' checked' : '') + '> Mark as done · تم</label>';
   return h + '</div>';
 }
 
 /* ---- WhatsApp: opens on THIS device, the person only taps Send ---- */
 function msg(p, t, k) { return 'StarC Cafe ☕\nHi' + (p.nick ? ' ' + p.nick : '') + ', ' + (k === 'new' ? 'new task · مهمة جديدة' : 'task reminder · تذكير بمهمة') + ':\n*' + t.title + '*\n📅 ' + t.date + (t.time ? '  ⏰ ' + t.time : '') + (t.notes ? '\n' + t.notes : ''); }
 var link = function (p, t, k) { return 'https://wa.me/' + p.phone + '?text=' + encodeURIComponent(msg(p, t, k)); };
-async function mark(t, p, k) { await api('cal_sent', { taskId: t.id, personId: p.id, kind: k }); if (k === 'remind') pending(); }
+async function mark(t, p, k) { await api('cal_sent', { taskId: t.id, personId: p.id, kind: k, date: t.date }); if (k === 'remind') pending(); }
 function recips(t) { return people.filter(function (p) { return t.all || (t.ids || []).indexOf(p.id) >= 0; }); }
 function openSend(t, rec, k, w) {
   var first = rec.find(function (p) { return p.phone; });
@@ -173,14 +176,15 @@ function remindAt(o, date, time) {
   if (o === 'h1') { var d = new Date(date + 'T' + (time || '09:00')); d.setHours(d.getHours() - 1); return ymd(d) + 'T' + p2(d.getHours()) + ':' + p2(d.getMinutes()); }
   return addDays(date, o === 'd0' ? 0 : o === 'd2' ? -2 : -1) + 'T14:00';
 }
+function toggleRep() { var on = $('#rp').value; $('#ruw').classList.toggle('hide', !on); $('#rpn').classList.toggle('hide', !(on && editing)); }
 function openTask(t) {
   editing = t ? t.id : 0; $('#dt').textContent = t ? 'Edit task' : 'New task';
-  $('#ti').value = t ? t.title : ''; $('#no').value = t ? t.notes : ''; $('#da').value = t ? t.date : sel; $('#tm').value = t ? t.time : '';
+  $('#ti').value = t ? t.title : ''; $('#no').value = t ? t.notes : ''; $('#da').value = t ? t.start : sel; $('#rp').value = t ? t.repeat : ''; $('#ru').value = t ? t.repeatUntil : ''; $('#tm').value = t ? t.time : '';
   $('#asg').innerHTML = '<label class="c"><input type="checkbox" id="all"' + (t && t.all ? ' checked' : '') + '> Everyone · الجميع</label>' +
     people.map(function (p) { return '<label class="c"><input type="checkbox" class="pp" value="' + p.id + '"' + (t && !t.all && t.ids.indexOf(p.id) >= 0 ? ' checked' : '') + '> ' + esc(nm(p)) + '</label>'; }).join('');
   var rs = 'd1', rv = '';
-  if (t) { rs = t.remindAt ? 'custom' : 'none'; ['d1', 'd0', 'd2'].forEach(function (o) { if (t.remindAt && remindAt(o, t.date, t.time) === t.remindAt) rs = o; }); rv = t.remindAt; }
-  $('#rs').value = rs; $('#rc').value = rv; $('#rc').classList.toggle('hide', rs !== 'custom'); $('#wa').checked = !t; $('#dlg').showModal();
+  if (t) { rs = t.remindAt ? 'custom' : 'none'; ['d1', 'd0', 'd2'].forEach(function (o) { if (t.remindAt && remindAt(o, t.start, t.time) === t.remindAt) rs = o; }); rv = t.remindAt; }
+  toggleRep(); $('#rs').value = rs; $('#rc').value = rv; $('#rc').classList.toggle('hide', rs !== 'custom'); $('#wa').checked = !t; $('#dlg').showModal();
 }
 async function saveTask() {
   var title = $('#ti').value.trim(), date = $('#da').value, time = $('#tm').value, all = $('#all').checked;
@@ -190,7 +194,7 @@ async function saveTask() {
   if ($('#rs').value === 'custom' && !rem) { alert('Choose the reminder date and time.'); return; }
   var t = { id: 0, title: title, notes: $('#no').value, date: date, time: time, all: all, ids: ids }, rec = $('#wa').checked ? recips(t) : [];
   var w = rec.some(function (p) { return p.phone; }) ? window.open('', '_blank') : null;     // opened now so the browser allows it
-  var j = await api('cal_task_save', { id: editing, title: title, notes: t.notes, date: date, time: time, assignees: all ? 'all' : ids, remindAt: rem });
+  var j = await api('cal_task_save', { id: editing, title: title, notes: t.notes, date: date, time: time, assignees: all ? 'all' : ids, remindAt: rem, repeat: $('#rp').value, repeatUntil: $('#ru').value });
   if (!j.ok) { if (w) w.close(); alert('Could not save: ' + j.error); return; }
   $('#dlg').close(); t.id = j.id; sel = date; mon = new Date(date + 'T12:00:00'); mon.setDate(1);
   await load(); pending(); if (rec.length) openSend(t, rec, 'new', w);
@@ -210,8 +214,8 @@ document.addEventListener('click', async function (e) {
   if (b.dataset.d) { sel = b.dataset.d; var d = new Date(sel + 'T12:00:00'); if (d.getMonth() !== mon.getMonth()) { mon = new Date(d); mon.setDate(1); await load(); } else render(); }
   else if (b.dataset.edit) openTask(tasks.find(function (t) { return t.id == b.dataset.edit; }));
   else if (b.dataset.wa) { var t = tasks.find(function (x) { return x.id == b.dataset.wa; }); openSend(t, recips(t), 'remind', null); }
-  else if (b.dataset.del) { if (confirm('Delete this task?')) { await api('cal_task_del', { id: +b.dataset.del }); await load(); pending(); } }
-  else if (b.dataset.r) { var x = pend[+b.dataset.r]; window.open(link(x, { title: x.title, notes: x.notes, date: x.date, time: x.time }, 'remind'), '_blank'); await api('cal_sent', { taskId: x.taskId, personId: x.personId, kind: 'remind' }); pending(); }
+  else if (b.dataset.del) { if (confirm((tasks.find(function (t) { return t.id == b.dataset.del; }) || {}).repeat ? 'Delete this task and ALL its repeats?' : 'Delete this task?')) { await api('cal_task_del', { id: +b.dataset.del }); await load(); pending(); } }
+  else if (b.dataset.r) { var x = pend[+b.dataset.r]; window.open(link(x, { title: x.title, notes: x.notes, date: x.date, time: x.time }, 'remind'), '_blank'); await api('cal_sent', { taskId: x.taskId, personId: x.personId, kind: 'remind', date: x.date }); pending(); }
   else if (b.dataset.sp) {
     var box = b.closest('.box'), v = {}; box.querySelectorAll('[data-k]').forEach(function (i) { v[i.dataset.k] = i.value; });
     var j = await api('cal_person_save', Object.assign({ id: +b.dataset.sp }, v)), m = box.querySelector('[data-msg]');
@@ -219,12 +223,12 @@ document.addEventListener('click', async function (e) {
     if (j.ok) { var pj = await api('cal_people'); people = pj.people || people; await load(); }
   }
   else if (b.id === 'all') document.querySelectorAll('.pp').forEach(function (i) { i.checked = false; i.disabled = b.checked; });
-  else if (b.dataset.done !== undefined && b.type === 'checkbox') { await api('cal_done', { taskId: +b.dataset.done, personId: +b.dataset.p || 0, done: b.checked }); await load(); if (mgr()) pending(); }
+  else if (b.dataset.done !== undefined && b.type === 'checkbox') { await api('cal_done', { taskId: +b.dataset.done, personId: +b.dataset.p || 0, done: b.checked, date: b.dataset.date }); await load(); if (mgr()) pending(); }
 });
 $('#go').onclick = doLogin; $('#pw').onkeydown = function (e) { if (e.key === 'Enter') doLogin(); };
 $('#out').onclick = logout; $('#add').onclick = function () { openTask(null); }; $('#sv').onclick = saveTask; $('#cx').onclick = function () { $('#dlg').close(); };
 $('#ppl').onclick = people_; $('#px').onclick = function () { $('#pd').close(); }; $('#wx').onclick = function () { $('#wad').close(); };
-$('#rs').onchange = function () { $('#rc').classList.toggle('hide', this.value !== 'custom'); };
+$('#rp').onchange = toggleRep; $('#rs').onchange = function () { $('#rc').classList.toggle('hide', this.value !== 'custom'); };
 $('#pv').onclick = function () { mon.setMonth(mon.getMonth() - 1); load(); }; $('#nx').onclick = function () { mon.setMonth(mon.getMonth() + 1); load(); };
 $('#td').onclick = function () { sel = today(); mon = new Date(); mon.setDate(1); load(); };
 show();
